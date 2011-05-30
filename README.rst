@@ -12,6 +12,8 @@ Tested on Roku firmware version 2.9.
 
 Please provide feedback: https://github.com/inbox/new/maihde
 
+Install this channel: http://www.randomwalking.com/project.php?project=roku_subsonic
+
 Credits
 ----------------------------------
 Icons from Emre Ozcelik's "Elegant Blue Web" icon set
