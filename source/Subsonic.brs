@@ -1,4 +1,6 @@
 REM ******************************************************
+REM vim: et: sw=4
+REM
 REM ROKU Channel supporting the Subsonic Media Server
 REM Copyright (C) 2011 Michael Ihde
 REM
@@ -47,27 +49,30 @@ Sub Main()
        if item = invalid then
            exit while
        else if item.Type = "album" then
-           items = GetAlbumSongs(item)
-	   options = {playQueueStyle: "flat-episodic"
-		     }
-           ShowSpringBoard(items, 0, options)            
+           PlayAlbum(item)
        else if item.Type = "button" then
            if item.id = "settings" then
                ShowConfigurationScreen()
            else if item.id = "shuffle" then
-               items = GetRandomSongs()
-               options = {fetchMore: GetRandomSongs
-                          playQueueStyle: "flat-category"
-                         }
-               ShowSpringBoard(items, 0, options)            
+               PlayRandom()
            else if item.id = "index" then
                ShowIndex()
+           else if item.id = "search" then
+               selected_item = DoSearch()
+               if selected_item <> invalid then
+                   if selected_item.Type = "artist" then
+                       ShowArtist(selected_item)
+                   else if selected_item.Type = "album" then
+                       PlayAlbum(selected_item)
+                   else if selected_item.Type = "song" then
+                       PlaySong(selected_item)
+                   end if
+               end if
            end if
        end if
     end while
 
     facade.Close()
-
     print "Exiting Main"
 end Sub
 
@@ -113,15 +118,15 @@ function CreateConfigurationScreen(port as Object) as Object
 
     serverUrl = getServerUrl()
     if serverUrl = invalid then
-	serverUrl = ""
+        serverUrl = ""
     end if
     username = getUsername()
     if username = invalid then
-	username = ""
+        username = ""
     end if
     password = getPassword()
     if password = invalid then
-	password = ""
+        password = ""
     end if
     screen.AddParagraph("Current Configuration")    
     screen.AddParagraph(" Server Address: " + serverUrl)    
@@ -146,58 +151,58 @@ function ShowConfigurationScreen()
 
     doExit = false
     while doExit = false ' Keep looping until the configuration is complete
-	while true
-	    msg = wait(0, port)
-	    if type(msg) = "roParagraphScreenEvent" then
-		if msg.isScreenClosed() then
-		    doExit = true
-		    exit while
-		else if msg.isButtonPressed() then
-		    if msg.getIndex() = 1 then
-			value = GetInput("Server Address", getServerUrl(), "Enter the server address", 30)
-			if value <> invalid then
-			    setServerUrl(value)
-			end if
-			exit while
-		    else if msg.getIndex() = 2 then
-			value = GetInput("Username", getUsername(), "Enter the username", 30)
-			if value <> invalid then
-			    setUsername(value)
-			end if
-			exit while
-		    else if msg.getIndex() = 3 then
-			value = GetInput("Password", getPassword(), "Enter the password", 30)
-			if value <> invalid then
-			    setPassword(value)
-			end if
-			exit while
-		    else if msg.getIndex() = 4 then
-			if isConfigured() = false then
-			    ShowErrorDialog("Configuration not complete")
-			else
-			    alive = isServerAlive()
-			    if alive = true then
-				ShowInformationalDialog("Connection success!")
-			    else
-				ShowErrorDialog("Failed to connect to server")
-			    end if
-			end if
-		    else if msg.getIndex() = 5 then
-		        doExit = true
-			exit while
-		    end if
-		end if
-	    endif
-	end while
+        while true
+            msg = wait(0, port)
+            if type(msg) = "roParagraphScreenEvent" then
+                if msg.isScreenClosed() then
+                    doExit = true
+                    exit while
+                else if msg.isButtonPressed() then
+                    if msg.getIndex() = 1 then
+                        value = GetInput("Server Address", getServerUrl(), "Enter the server address", 30)
+                        if value <> invalid then
+                            setServerUrl(value)
+                        end if
+                        exit while
+                    else if msg.getIndex() = 2 then
+                        value = GetInput("Username", getUsername(), "Enter the username", 30)
+                        if value <> invalid then
+                            setUsername(value)
+                        end if
+                        exit while
+                    else if msg.getIndex() = 3 then
+                        value = GetInput("Password", getPassword(), "Enter the password", 30)
+                        if value <> invalid then
+                            setPassword(value)
+                        end if
+                        exit while
+                    else if msg.getIndex() = 4 then
+                        if isConfigured() = false then
+                            ShowErrorDialog("Configuration not complete")
+                        else
+                            alive = isServerAlive()
+                            if alive = true then
+                                ShowInformationalDialog("Connection success!")
+                            else
+                                ShowErrorDialog("Failed to connect to server")
+                            end if
+                        end if
+                    else if msg.getIndex() = 5 then
+                        doExit = true
+                        exit while
+                    end if
+                end if
+            endif
+        end while
 
         if doExit = false then
-	    newScreen = CreateConfigurationScreen(port)
-	    newScreen.Show()
-	    screen.Close()
-	    screen = newScreen
-	else
-	    screen.Close()
-	end if
+            newScreen = CreateConfigurationScreen(port)
+            newScreen.Show()
+            screen.Close()
+            screen = newScreen
+        else
+            screen.Close()
+        end if
     end while
 end function
 
@@ -219,7 +224,7 @@ function ShowErrorDialog(message as String) as Object
         if type(msg) = "roMessageDialogEvent" then
             if msg.isScreenClosed() then
                 exit while
-	    else if msg.isButtonPressed() then
+            else if msg.isButtonPressed() then
                 exit while
             end if
         end if
@@ -244,7 +249,7 @@ function ShowInformationalDialog(message as String) as Object
         if type(msg) = "roMessageDialogEvent" then
             if msg.isScreenClosed() then
                 exit while
-	    else if msg.isButtonPressed() then
+            else if msg.isButtonPressed() then
                 exit while
             end if
         end if
@@ -269,18 +274,18 @@ function GetInput(title as String, default as Dynamic, message as String, maxLen
     screen.Show()
 
     while true
-	msg = wait(0, screen.GetMessagePort())
-	if type(msg) = "roKeyboardScreenEvent" then
-	    if msg.isScreenClosed()
-		return invalid
-	    else if msg.isButtonPressed() then
-		if msg.GetIndex() = 1 then
-		    return screen.GetText()
-		else if msg.GetIndex() = 2 then
-		    return invalid
-		end if
-	    end if
-	end if
+        msg = wait(0, screen.GetMessagePort())
+        if type(msg) = "roKeyboardScreenEvent" then
+            if msg.isScreenClosed()
+                return invalid
+            else if msg.isButtonPressed() then
+                if msg.GetIndex() = 1 then
+                    return screen.GetText()
+                else if msg.GetIndex() = 2 then
+                    return invalid
+                end if
+            end if
+        end if
     end while
 end function
 
@@ -320,7 +325,7 @@ function ShowMainScreen() as Object
     names = []
     for i=0 to (categoryList.count() - 1) step 1
         names.push(categoryList[i].Name)
-	screen.SetContentList(i, categoryList[i].Items)
+        screen.SetContentList(i, categoryList[i].Items)
     next
     screen.SetListNames(names)
    
@@ -345,20 +350,20 @@ function ShowMainScreen() as Object
                 item = categoryList[row].Items[selection]
                 Exit while
             else if msg.isScreenClosed() then
-	        print "Main screen closed"
+                print "Main screen closed"
                 Exit while
             end if
-	else
-	    ' Reload the random list, only if random isn't focused
-	    for i=0 to (categoryList.count() - 1) step 1
-		if categoryList[i].Id = "random" and focusedRow <> i then
-		    categoryList[i].Items = getAlbumList(categoryList[i].Id)
-		    screen.SetContentList(i, categoryList[i].Items)
-		end if
-	    next	
+        else
+            ' Reload the random list, only if random isn't focused
+            for i=0 to (categoryList.count() - 1) step 1
+                if categoryList[i].Id = "random" and focusedRow <> i then
+                    categoryList[i].Items = getAlbumList(categoryList[i].Id)
+                    screen.SetContentList(i, categoryList[i].Items)
+                end if
+            next        
         end if
     end while
-		
+                
     screen.Close()
 
     return item
@@ -440,84 +445,84 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
         if type(msg) = "roSpringboardScreenEvent" then
             if msg.isScreenClosed() then
                 Exit while
-	    else if msg.isButtonPressed() then
-		screen.AllowUpdates(false)
-	        if msg.getIndex() = 1 then
-		    screen.ClearButtons()
-		    if paused then
+            else if msg.isButtonPressed() then
+                screen.AllowUpdates(false)
+                if msg.getIndex() = 1 then
+                    screen.ClearButtons()
+                    if paused then
                         screen.AddButton(1, "Pause")
-			paused = false
-			player.Resume()
-		    else
+                        paused = false
+                        player.Resume()
+                    else
                         screen.AddButton(1, "Play")
-			paused = true
-			player.Pause()
-		    end if
+                        paused = true
+                        player.Pause()
+                    end if
                     screen.AddButton(2, "Show Queue")
-	        else if msg.getIndex() = 2 then
+                else if msg.getIndex() = 2 then
                     i = ShowPlayQueue(items, index, options.playQueueStyle)
                     if (i > 0) and (i <> index) then
                         index = i
-			player.Stop()
+                        player.Stop()
                         player.SetNext(index)
-	                screen.SetContent(items[index])
-			player.Play()
+                        screen.SetContent(items[index])
+                        player.Play()
                     end if
-		end if
-		screen.AllowUpdates(true)
-	    else if msg.isRemoteKeyPressed() then
-		i = msg.getIndex()
-		if i = 4 then ' left
-		    if (index > 0) then
-		        index = index - 1
-			player.Stop()
+                end if
+                screen.AllowUpdates(true)
+            else if msg.isRemoteKeyPressed() then
+                i = msg.getIndex()
+                if i = 4 then ' left
+                    if (index > 0) then
+                        index = index - 1
+                        player.Stop()
                         player.SetNext(index)
-	                screen.SetContent(items[index])
-			player.Play()
-		    end if
-		else if i = 5 then ' right
-		    if (index < (items.count() - 1)) then
-		        index = index + 1
-			player.Stop()
+                        screen.SetContent(items[index])
+                        player.Play()
+                    end if
+                else if i = 5 then ' right
+                    if (index < (items.count() - 1)) then
+                        index = index + 1
+                        player.Stop()
                         player.SetNext(index)
-	                screen.SetContent(items[index])
-			player.Play()
+                        screen.SetContent(items[index])
+                        player.Play()
                     else if options.DoesExist("fetchMore") then
-		        items = options.fetchMore()	
+                        items = options.fetchMore()     
                         if items.count() > 0 then
-			    index = 0
-			    player.Stop()
-			    screen.SetContent(items[index])
-			    player.SetContentList(items)
-		            player.SetNext(index)
-			    player.Play()
+                            index = 0
+                            player.Stop()
+                            screen.SetContent(items[index])
+                            player.SetContentList(items)
+                            player.SetNext(index)
+                            player.Play()
                         else
                             exit while
                         end if
-		    end if
-		end if
-	    end if
+                    end if
+                end if
+            end if
         else if type(msg) = "roAudioPlayerEvent" then
             if msg.isListItemSelected() then
-	        index = msg.GetIndex()
-	        screen.SetContent(items[index])
+                index = msg.GetIndex()
+                screen.SetContent(items[index])
             else if msg.isStatusMessage() then
-		if msg.getmessage() = "start of play" then
-		else if msg.getmessage() = "end of playlist" then
+                if msg.getmessage() = "start of play" then
+                else if msg.getmessage() = "end of playlist" then
                     if options.DoesExist("fetchMore") then
-		        items = options.fetchMore()	
+                        items = options.fetchMore()     
                         if items.count() > 0 then
-			    index = 0
-			    player.Stop()
-			    screen.SetContent(items[index])
-			    player.SetContentList(items)
-		            player.SetNext(index)
-			    player.Play()
+                            index = 0
+                            player.Stop()
+                            screen.SetContent(items[index])
+                            player.SetContentList(items)
+                            player.SetNext(index)
+                            player.Play()
                         else
                             exit while
                         end if
-		    end if
-		end if
+                    end if
+                end if
             end if
         end If
     end while
@@ -537,21 +542,46 @@ function getAlbumList(listtype as String) as object
     
     if xml.Parse(xferResult)
        for each album in xml.albumList.album
-           item = CreateObject("roAssociativeArray")
-           item.Type = "album"
-           item.ContentType = "audio"
-           item.Title = album@title
-           item.Artist = album@artist
-           item.Id = album@id
-           if album@coverArt <> invalid then
-               item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
-               item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
-           endif
-           albumList.push(item)
+           item = CreateAlbumItemFromXml(album)
+           if item <> invalid then
+               albumList.push(item)
+           end if
        next
     end if
 
     return albumList
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function PlaySong(song as Object)
+    songs = [ song ]
+    ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function PlayAlbum(album as Object)
+    songs = GetAlbumSongs(album)
+    ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function PlayRandom()
+    screen = CreateObject("roOneLineDialog")
+    screen.SetTitle("Retrieving...")
+    screen.ShowBusyAnimation()
+    screen.Show()
+
+    items = GetRandomSongs()
+    options = {fetchMore: GetRandomSongs
+              playQueueStyle: "flat-category"
+             }
+    ShowSpringBoard(items, 0, options)            
 end function
 
 REM ***************************************************************
@@ -566,23 +596,10 @@ function GetAlbumSongs(album as Object)
     items = [] 
     if xml.Parse(xferResult)
         for each child in xml.directory.child
-            item = CreateObject("roAssociativeArray")
-            item.Title = child@title
-            item.Album = child@album
-            item.Artist = child@artist
-            item.ShortDescriptionLine1 = child@title
-            item.EpisodeNumber = child@track
-            if child@contentType = "audio/mpeg" then
-                item.ContentType = "audio"
-                item.StreamFormat = "mp3"
-            else if child@contentType = "audio/mp4" then
-                item.ContentType = "audio"
-                item.StreamFormat = "mp4"
-            endif
-            item.SDPosterUrl = album.SDPosterUrl
-            item.HDPosterUrl = album.HDPosterUrl
-            item.Url = createSubsonicUrl("stream.view", {id: child@id})
-            items.push(item)
+            item = CreateSongItemFromXml(child)
+            if item <> invalid then
+                items.push(item)
+            end if
         next
     end if
 
@@ -595,25 +612,32 @@ REM ***************************************************************
 function getMainMenu() as object
         buttons = [
             { Type: "button"
-              id: "settings"
-              Title: "Settings"
-              Description: "Subsonic settings"
+              id: "index"
+              Title: "All Music"
+              Description: "Browse all music"
+              SDPosterUrl: "pkg:/images/buttons/index.png"
+              HDPosterUrl: "pkg:/images/buttons/index.png"
             }
-' TODO
-'            { Type: "button"
-'              id: "search"
-'              Title: "Search"
-'              Description: "Search subsonic"
-'            }
+            { Type: "button"
+              id: "search"
+              Title: "Search"
+              Description: "Search subsonic"
+              SDPosterUrl: "pkg:/images/buttons/search.png"
+              HDPosterUrl: "pkg:/images/buttons/search.png"
+            }
             { Type: "button"
               id: "shuffle"
               Title: "Shuffle All"
               Description: "Shuffle all songs"
+              SDPosterUrl: "pkg:/images/buttons/shuffle.png"
+              HDPosterUrl: "pkg:/images/buttons/shuffle.png"
             }
             { Type: "button"
-              id: "index"
-              Title: "All Artists"
-              Description: "Browse all artists"
+              id: "settings"
+              Title: "Settings"
+              Description: "Subsonic settings"
+              SDPosterUrl: "pkg:/images/buttons/settings.png"
+              HDPosterUrl: "pkg:/images/buttons/settings.png"
             }
        ]
        return buttons
@@ -631,23 +655,8 @@ function GetRandomSongs(count=100 as Integer) as Object
     items = [] 
     if xml.Parse(xferResult)
         for each song in xml.randomSongs.song
-            item = CreateObject("roAssociativeArray")
-            item.Title = song@title
-            item.Album = song@album
-            item.Artist = song@artist
-            item.ShortDescriptionLine1 = song@title
-            item.EpisodeNumber = song@track
-            item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt})
-            item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt})
-            item.Url = createSubsonicUrl("stream.view", {id: song@id})
-            ' Only push songs with the correct content type
-            if song@contentType = "audio/mpeg" then
-                item.ContentType = "audio"
-                item.StreamFormat = "mp3"
-                items.push(item)
-            else if song@contentType = "audio/mp4" then
-                item.ContentType = "audio"
-                item.StreamFormat = "mp4"
+            item = CreateSongItemFromXml(song)
+            if item <> invalid then
                 items.push(item)
             end if
         next
@@ -663,38 +672,40 @@ function ShowIndex()
     Names = CreateObject("roArray", 0, true)
     Indexes = CreateObject("roAssociativeArray")
 
-    xfer = CreateObject("roURLTransfer")
-    xfer.SetURL(createSubsonicUrl("getIndexes.view", {}))
-    xferResult = xfer.GetToString()
+    xferResult = UrlTransferWithBusyDialog(createSubsonicUrl("getIndexes.view", {}))
     xml = CreateObject("roXMLElement")
 
-    if xml.Parse(xferResult)
-       for each index in xml.indexes.index
-           Artists = CreateObject("roArray", 0, true)
-           for each artist in index.artist
-               item = CreateObject("roAssociativeArray")
-	       item.Id = artist@id
-	       item.ShortDescriptionLine1 = artist@name 
-               ' TODO Subsonic provides no artwork for artists, so just show a little submarine icon instead
-	       Artists.push(item)
-	   next
-           Names.push(index@name)
-           Indexes.AddReplace(index@name, Artists)
-       next
-    end if
-    
     port = CreateObject("roMessagePort")
     screen = CreateObject("roPosterScreen")
     screen.SetMessagePort(port)
     screen.SetListStyle("flat-category")
     screen.SetListDisplayMode("best-fit")
 
+    screen.Show()
+
+    screen.ShowMessage("Loading...")
+
+    if xml.Parse(xferResult.data)
+       for each index in xml.indexes.index
+           Artists = CreateObject("roArray", 0, true)
+           for each artist in index.artist
+               item = CreateArtistItemFromXml(artist)
+               if item <> invalid then
+                   Artists.push(item)
+               end if
+           next
+           Names.push(index@name)
+           Indexes.AddReplace(index@name, Artists)
+       next
+    end if
+    
+    screen.ClearMessage()
+
     screen.SetFocusedListItem(0)
     screen.setListNames(Names)
     curIndex = Names[0]
     screen.SetContentList(Indexes[curIndex])
 
-    screen.Show()
 
     while true
         msg = wait(0, port)
@@ -708,39 +719,32 @@ function ShowIndex()
                 screen.SetFocusedListItem(0)
             else if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                ShowArtist(Indexes[curIndex][msg.GetIndex()].Id)
+                ShowArtist(Indexes[curIndex][msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             endif
         endif
-    end while	        
+    end while           
 end function
+
 
 REM ***************************************************************
 REM
 REM ***************************************************************
-function ShowArtist(artist_id as String)
+function ShowArtist(artist as Object)
     albumList = CreateObject("roArray", 0, true)
 
     xfer = CreateObject("roURLTransfer")
-    xfer.SetURL(createSubsonicUrl("getMusicDirectory.view", {id: artist_id}))
+    xfer.SetURL(artist.Url)
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
 
     if xml.Parse(xferResult)
        for each child in xml.directory.child
-           item = CreateObject("roAssociativeArray")
-           item.Type = "child"
-           item.ContentType = "audio"
-           item.Title = child@title
-	   item.ShortDescriptionLine1 = child@title
-           item.Artist = child@artist
-           item.Id = child@id
-           if child@coverArt <> invalid then
-               item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: child@coverArt})
-               item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: child@coverArt})
-           endif
-           albumList.push(item)
+           item = CreateAlbumItemFromXml(child)
+           if item <> invalid then
+               albumList.push(item)
+           end if
        next
     end if
     
@@ -749,7 +753,8 @@ function ShowArtist(artist_id as String)
     screen.SetMessagePort(port)
     screen.SetListStyle("flat-category")
     screen.SetListDisplayMode("best-fit")
-
+    screen.SetBreadcrumbText(artist.Title, "")
+    screen.SetBreadcrumbEnabled(true)
     screen.SetContentList(albumList)
 
     screen.Show()
@@ -761,47 +766,209 @@ function ShowArtist(artist_id as String)
         if type(msg) = "roPosterScreenEvent" then
             if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-	        items = GetAlbumSongs(albumList[msg.GetIndex()])
-	        options = {playQueueStyle: "flat-episodic"
-	 		  }
-	        ShowSpringBoard(items, 0, options)            
+                PlayAlbum(albumList[msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             end if
         endif
-    end while	        
+    end while           
+end function
+
+REM ***************************************************************
+REM
+REM @returns the select item, or invalid if no selection was made
+REM ***************************************************************
+function DoSearch() as Dynamic
+    item = invalid
+
+    history = CreateObject("roSearchHistory")
+
+    port = CreateObject("roMessagePort")
+    search_screen = CreateObject("roSearchScreen")
+    search_screen.SetMessagePort(port)
+    search_screen.SetSearchTermHeaderText("Recent Searches")
+    search_screen.SetSearchButtonText("search")
+    search_screen.SetClearButtonText("clear history")
+    search_screen.SetSearchTerms(history.GetAsArray())
+    
+    search_screen.Show() 
+
+    searchterm = invalid
+    while true
+        msg = wait(0, port)
+        print "recv "; type(msg)
+        if type(msg) = "roSearchScreenEvent" then
+            if msg.isScreenClosed() then 
+                exit while
+            else if msg.isCleared() then 
+                history.Clear()
+            else if msg.isPartialResult() then 
+                filteredList = CreateObject("roArray", 0, true)
+                print "partial result "; msg.GetMessage()
+                if Len(msg.GetMessage()) = 0 then
+                    search_screen.SetSearchTerms(history.GetAsArray())
+                else
+                    for each t in history.GetAsArray()
+                        if StartsWith(t, msg.GetMessage()) then
+                            filteredList.Push(t)
+                        end if
+                    next
+                    search_screen.SetSearchTerms(filteredList)
+                end if
+            else if msg.isFullResult() then 
+                print "full result "; msg.GetMessage()
+                searchterm = msg.GetMessage()
+                history.Push(searchterm)
+                exit while
+            end if
+        endif
+    end while           
+        
+    search_facade = CreateObject("roPosterScreen")
+    search_facade.Show()
+
+    search_screen.Close() 
+ 
+    if searchterm <> invalid then
+        ' Execute the search
+        xferResult = UrlTransferWithBusyDialog(createSubsonicUrl("search2.view", {query: searchterm}))
+        search_facade.ShowMessage("Loading...")
+
+        results = {artists: CreateObject("roArray", 0, true)
+                   albums: CreateObject("roArray", 0, true)
+                   songs: CreateObject("roArray", 0, true)
+                  }
+
+        xml = CreateObject("roXMLElement")
+        if xml.Parse(xferResult.data)
+           for each artist in xml.searchResult2.artist
+               item = CreateArtistItemFromXml(artist)
+               if item <> invalid then
+                   results.artists.push(item)
+               end if
+           next
+           for each album in xml.searchResult2.album
+               item = CreateAlbumItemFromXml(album)
+               if item <> invalid then
+                   results.albums.push(item)
+               end if
+           next
+           for each song in xml.searchResult2.song
+                item = CreateSongItemFromXml(song)
+                if item <> invalid then
+                    results.songs.push(item)
+                end if
+           next
+        end if
+
+        results_screen = CreateObject("roGridScreen")
+        results_screen.SetBreadcrumbText("Search results for '" + searchterm + "'", "")
+        results_screen.SetBreadcrumbEnabled(true)
+        results_screen.SetMessagePort(port)
+        results_screen.SetDisplayMode("scale-to-fill")
+        results_screen.SetGridStyle("flat-square")
+        results_screen.SetupLists(3)
+        results_screen.SetContentList(0, results.artists)
+        results_screen.SetContentList(1, results.albums)
+        results_screen.SetContentList(2, results.songs)
+        results_screen.SetListNames(["Artists", "Albums", "Songs"])
+
+        results_screen.Show()
+
+        while true
+            msg = wait(0, port)
+
+            print "rcvd "; type(msg)
+            if type(msg) = "roGridScreenEvent" then
+                if msg.isScreenClosed() then 
+                    exit while
+                else if msg.isListItemSelected() then
+                    row = msg.GetIndex()
+                    selection = msg.getData()
+                    if row = 0 then
+                        item = results.artists[selection]
+                    else if row = 1
+                        item = results.albums[selection]
+                    else if row = 2
+                        item = results.songs[selection]
+                    end if
+                    Exit while
+                end if
+            endif
+        end while
+
+        search_facade.ShowMessage("")
+        results_screen.Close()
+        ' A pause is necessary here, otherwise the results grid screen
+        ' messes up the redraw of the main grid screen
+        sleep(500)
+    end if
+
+    search_facade.Close()
+    return item
 end function
 
 REM ***************************************************************
 REM
 REM ***************************************************************
-function isServerAlive() as Boolean
+function StartsWith(text As String, substring As String) as Boolean
+    if instr(1, text, substring) = 1 then
+        return true
+    else
+        return false
+    end if
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function URLTransferWithBusyDialog(url as String, title="Retrieving..." as String) as Object
+    result = CreateObject("roAssociativeArray")
+    result.data = invalid
+    result.code = 0
+
     screen = CreateObject("roOneLineDialog")
-    screen.SetTitle("Checking server connection to " + getServerUrl())
+    screen.SetTitle(title)
     screen.ShowBusyAnimation()
     screen.Show()
 
     xfer = CreateObject("roURLTransfer")
     port = CreateObject("roMessagePort")
     xfer.SetPort(port)
-    xfer.SetURL(createSubsonicUrl("ping.view"))
-    xferResult = xfer.AsyncGetToString()
+    xfer.SetURL(url)
+    valid = xfer.AsyncGetToString()
+                
+    if valid = false then
+        return result
+    end if
     
-    sleep(3000) ' Give it some time so the users sees the busy dialog
+    sleep(2000) ' Always show the dialog for at least 2 seconds
 
     while true
         msg = wait(0, port)
-	if type(msg) = "roUrlEvent" then
-	    if msg.getInt() = 1 then
-	        screen.Close()
-	        if msg.getResponseCode() = 200 then
-	            return true
-	        else
-	            return false
-		end if
-	    end if
-	end if
+        if type(msg) = "roUrlEvent" then
+            if msg.getInt() = 1 then
+                screen.Close()
+                result.data = msg.getString()
+                result.code = msg.getResponseCode()
+                return result
+            end if
+        end if
     end while
+
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function isServerAlive() as Boolean
+    url = getServerUrl()
+    xferResult = UrlTransferWithBusyDialog(url, "Checking server connection to " + url) 
+    if xferResult.code = 200 then
+        return true
+    else
+        return false
+    end if
 end function
 
 REM ***************************************************************
@@ -819,7 +986,7 @@ function createSubsonicUrl(view as String, params={} as Object) as String
     for each p in params
         if params[p] <> invalid
             queryString = queryString + p + "=" + params[p] + "&"
-	end if
+        end if
     next 
 
     ' Create the full URL
@@ -863,9 +1030,9 @@ REM ***************************************************************
 function getServerUrl() As Dynamic
     sec = CreateObject("roRegistrySection", "Settings")
     if sec.Exists("serverUrl") then
-	return sec.Read("serverUrl")
+        return sec.Read("serverUrl")
     else
-	return invalid
+        return invalid
     end if
 end function
 
@@ -884,9 +1051,9 @@ REM ***************************************************************
 function getUsername() as Dynamic 
     sec = CreateObject("roRegistrySection", "Settings")
     if sec.Exists("username") then
-	return sec.Read("username")
+        return sec.Read("username")
     else
-	return invalid
+        return invalid
     end if
 end function
 
@@ -905,9 +1072,9 @@ REM ***************************************************************
 function getPassword() as Dynamic 
     sec = CreateObject("roRegistrySection", "Settings")
     if sec.Exists("password") then
-	return sec.Read("password")
+        return sec.Read("password")
     else
-	return invalid
+        return invalid
     end if
 end function
 
@@ -925,4 +1092,80 @@ REM
 REM ***************************************************************
 function getClient() as String
   return "roku"
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function CreateArtistItemFromXml(artist as Object) as Dynamic
+    item = CreateObject("roAssociativeArray")
+    item.Type = "artist"
+    item.Id = artist@id
+    item.Title = artist@name
+    item.ShortDescriptionLine1 = artist@name 
+    item.Url = createSubsonicUrl("getMusicDirectory.view", {id: artist@id})
+    item.SDPosterUrl = "pkg:/images/buttons/artist.png"
+    item.HDPosterUrl = "pkg:/images/buttons/artist.png"
+    return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function CreateAlbumItemFromXml(album as Object) as Dynamic
+    if album@isDir = "false" then
+        return invalid
+    end if
+
+    item = CreateObject("roAssociativeArray")
+    item.Id = album@id
+    item.Type = "album"
+    item.Title = album@title
+    item.Artist = album@artist
+    item.ShortDescriptionLine1 = album@title
+    item.Url = createSubsonicUrl("getMusicDirectory.view", {id: album@id})
+    if album@coverArt <> invalid then
+        item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
+        item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
+    endif
+    return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function CreateSongItemFromXml(song as Object) as Dynamic
+    if song@isDir = "true" then
+        return invalid
+    end if
+
+    item = CreateObject("roAssociativeArray")
+    item.Id = song@id
+    item.Type = "song"
+    item.ContentType = "audio"
+    item.Title = song@title
+    item.Artist = song@artist
+    item.Album = song@album
+
+    item.ContentType = "audio"
+    item.StreamFormat = invalid
+
+    ' According to the Component Reference, roAudioPlayer only supports
+    ' WMA or MP3
+    if song@contentType = "audio/mpeg" then
+        item.StreamFormat = "mp3"
+    else if song@transcodedContentType = "audio/mpeg"
+        item.StreamFormat = "mp3"
+    end if
+
+    if item.StreamFormat <> invalid then
+        item.Url = createSubsonicUrl("stream.view", {id: song@id})
+    end if
+
+    if song@coverArt <> invalid then
+       item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt})
+       item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt})
+    endif
+
+    return item
 end function
