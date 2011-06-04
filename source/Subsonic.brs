@@ -1123,6 +1123,7 @@ function CreateAlbumItemFromXml(album as Object) as Dynamic
     item.Title = album@title
     item.Artist = album@artist
     item.ShortDescriptionLine1 = album@title
+    item.ShortDescriptionLine2 = album@artist
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: album@id})
     if album@coverArt <> invalid then
         item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
@@ -1146,6 +1147,8 @@ function CreateSongItemFromXml(song as Object) as Dynamic
     item.Title = song@title
     item.Artist = song@artist
     item.Album = song@album
+    item.ShortDescriptionLine1 = song@title
+    item.ShortDescriptionLine2 = song@album + " - " + song@artist
 
     item.ContentType = "audio"
     item.StreamFormat = invalid
