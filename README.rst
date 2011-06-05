@@ -1,4 +1,3 @@
-
 Introduction
 ----------------------------------
 This software is a ROKU front-end to the Subsonic media streaming server.  It
@@ -21,15 +20,23 @@ Icons from Emre Ozcelik's "Elegant Blue Web" icon set
 
 Known Issues
 ----------------------------------
-1. Transcoded files only play 15-20 seconds of audio, possibly a bug
-   in subsonic where transcoded files don't behave correctly when roku
-   sends a HTTP GET with an offset request.
+1. Transcoded files play only a portion of the file; this is because when the roku
+   does not receive a content-length response, it will use partial transfer requests
+   and it expects a 416 response code to indicate that the partial request has 
+   reached the end of the file.  Subsonic does not send a 416 response code,
+   causing the roku to abort playback.  See this link for the patch information:
+
+   http://www.activeobjects.no/subsonic/forum/viewtopic.php?p=26893#26893 
+
 2. roGridScreen doesn't cooperate with roAudioPlayer running in the background.
    If the roAudioPlayer sends an event while the grid screen is visible, the 
    album artwork get's scaled funny; this odd GridScreen behavior is in addition
    to the typical issues with roGridScreen that prevent normal stacking behavior.
+
 3. When returning from the search roGridScreen to the main roGridScreen, a small
    delay must manually be introduced, otherwise the main grid screen get's corrupted.
+
+4. Music must be organized in Artist/Album/Songs directory structure.
 
 TODO
 ----------------------------------
