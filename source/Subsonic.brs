@@ -1277,7 +1277,11 @@ function CreateSongItemFromXml(song as Object) as Dynamic
     item.Title = song@title
     item.Artist = song@artist
     item.Album = song@album
-    item.Length = strtoi(song@duration)
+    if song@duration <> invalid then
+        item.Length = strtoi(song@duration)
+    else
+        print "Missing duration "; song@title
+    end if
     item.ShortDescriptionLine1 = song@title
     item.ShortDescriptionLine2 = song@album + " - " + song@artist
 
