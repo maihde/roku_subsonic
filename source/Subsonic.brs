@@ -407,7 +407,118 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         print "No Items"
         return invalid
     end if
+
+ 
     port=CreateObject("roMessagePort")
+
+    ' the playback management object
+    player = {
+        audioPlayer: invalid
+        items: invalid
+        timer: invalid
+        paused: true
+        progress: 0
+        index: 0
+
+        Init: function(port as Object, items as Object, index=0 as Integer) 
+            m.index = index
+            m.items = items
+            m.audioPlayer = CreateObject("roAudioPlayer")
+            m.audioPlayer.SetMessagePort(port)
+            m.audioPlayer.SetLoop(0)
+            m.audioPlayer.SetContentList(m.items)
+            m.audioPlayer.SetNext(m.index)
+            m.timer = CreateObject("roTimespan")
+            m.progress = 0
+        end function
+
+        SetContentList : function(items as Object, index=0 as Integer)
+            m.Stop()
+            m.index = index
+            m.audioPlayer.SetContentList(items)
+        end function
+
+        Play: function()
+            m.progress = 0
+            m.timer.Mark()
+            m.audioPlayer.Play()
+            m.paused = false
+        end function
+
+        Pause: function()
+            m.timer.Mark()
+            m.audioPlayer.Pause()
+            m.paused = true
+        end function
+
+        Resume: function()
+            m.timer.Mark()
+            m.audioPlayer.Resume()
+            m.paused = false
+        end function
+        
+        Stop: function()
+            m.timer.Mark()
+            m.audioPlayer.Stop()
+            m.paused = true
+        end function
+
+        ResetProgress: function()
+            m.progress = 0
+            m.timer.Mark()
+        end function
+
+        GetProgress: function() as Integer
+            if not m.paused then
+                m.progress = m.progress + m.timer.TotalSeconds()
+                m.timer.Mark()
+            end if
+            return m.progress
+        end function
+         
+        GetCurrent: function() as Dynamic
+            return m.items.getEntry(m.index)
+        end function
+
+        GetNext: function() as Dynamic
+            return m.items.getEntry(m.index + 1)
+        end function
+
+        GetPrev: function() as Dynamic
+            return m.items.getEntry(m.index - 1)
+        end function
+
+        GotoNext: function() as Boolean
+            return m.Goto(m.index + 1)
+        end function
+
+        GotoPrev: function() as Boolean
+            return m.Goto(m.index - 1)
+        end function
+
+        Goto: function(index as Integer) as Boolean
+            if index >= 0 and index < m.items.Count() then
+                print "Setting index "; index
+                m.index = index
+                m.audioPlayer.Stop()
+                m.audioPlayer.SetNext(m.index)
+                m.progress = 0
+                m.timer.Mark()
+                m.audioPlayer.Play()
+                return true
+            else
+                return false
+            end if
+        end function
+
+        SetContents: function(contents as Object)
+            m.audioPlayer.SetContents(contents)
+        end function
+    }
+
+    player.Init(port, items, index)
+
+    ' the display screen
     screen = CreateObject("roSpringboardScreen")
     screen.AllowUpdates(false)
 REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
@@ -415,9 +526,9 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     REM explictly setting style = 'rounded-square-generic' prevents the progress bar from displaying
     REM with firmware 2.9
     REM screen.SetPosterStyle("rounded-square-generic")
-    screen.SetContent(items[index])
+    screen.SetContent(player.items[index])
     screen.SetDescriptionStyle("audio")
-    screen.SetTitle(items[index].Title)
+    screen.SetTitle(player.items[index].Title)
     screen.SetProgressIndicatorEnabled(true)
     screen.SetStaticRatingEnabled(false)
     screen.ClearButtons()
@@ -426,38 +537,34 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     else
         screen.AddButton(1, "Pause")
     end if
-    screen.AddButton(2, "Show Queue")
+    if player.GetPrev() <> invalid then
+        screen.AddButton(2, "Prev - " + player.GetPrev().Title)
+    end if
+    if player.GetNext() <> invalid then
+        screen.AddButton(3, "Next - " + player.GetNext().Title)
+    end if
+    screen.AddButton(4, "Show Queue")
     screen.AllowNavLeft(true)
     screen.AllowNavRight(true)
-
-    player = CreateObject("roAudioPlayer")
-    player.SetMessagePort(port)
-    player.SetLoop(0)
-    player.SetContentList(items)
-    player.SetNext(index)
     
-    ' Prepare objects used to create a progress indicator 
-    progress = 0
-    timer = CreateObject("roTimespan")
     
-    screen.SetProgressIndicator(progress, items[index].length)
+    screen.SetProgressIndicator(player.progress, player.GetCurrent().length)
     if not paused then
-        timer.Mark()
         player.Play()
     end if
    
     screen.AllowUpdates(true)
     screen.Show()
- 
+
+
     while true
         'print "Waiting for message from Springboard"
         msg = wait(1000, port)
         
         ' Update the progress indicator
-        if not paused and progress >= 0 then
-            progress = progress + timer.TotalSeconds()
-            timer.Mark()
-            screen.SetProgressIndicator(progress, items[index].length)
+        if player.GetCurrent() <> invalid then
+            progress = player.GetProgress()
+            screen.SetProgressIndicator(progress, player.GetCurrent().length)
         end if
 
         'print "Got Message:";type(msg)
@@ -465,65 +572,42 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             if msg.isScreenClosed() then
                 Exit while
             else if msg.isButtonPressed() then
-                screen.AllowUpdates(false)
+                ' Handle the event
+                print "Button pressed"; msg.getIndex()
                 if msg.getIndex() = 1 then
-                    screen.ClearButtons()
-                    if paused then
-                        screen.AddButton(1, "Pause")
-                        paused = false
-                        timer.Mark()
+                    if player.paused then
                         player.Resume()
                     else
-                        screen.AddButton(1, "Play")
-                        paused = true
                         player.Pause()
                     end if
-                    screen.AddButton(2, "Show Queue")
                 else if msg.getIndex() = 2 then
+                    player.GotoPrev()
+                    screen.SetContent(player.GetCurrent())
+                else if msg.getIndex() = 3 then
+                    player.GotoNext()
+                    screen.SetContent(player.GetCurrent())
+                else if msg.getIndex() = 4 then
                     i = ShowPlayQueue(items, index, options.playQueueStyle)
-                    if (i > 0) and (i <> index) then
-                        index = i
-                        player.Stop()
-                        player.SetNext(index)
-                        screen.SetContent(items[index])
-                        progress = 0
-                        timer.Mark()
-                        player.Play()
+                    if (i > 0) and (i <> player.index) then
+                        player.Goto(i)
+                        screen.SetContent(player.GetCurrent())
                     end if
                 end if
-                screen.AllowUpdates(true)
             else if msg.isRemoteKeyPressed() then
                 i = msg.getIndex()
                 if i = 4 then ' left
-                    if (index > 0) then
-                        index = index - 1
-                        player.Stop()
-                        player.SetNext(index)
-                        screen.SetContent(items[index])
-                        progress = 0
-                        timer.Mark()
-                        player.Play()
+                    if player.GotoPrev() then
+                        screen.SetContent(player.GetCurrent())
                     end if
                 else if i = 5 then ' right
-                    if (index < (items.count() - 1)) then
-                        index = index + 1
-                        player.Stop()
-                        player.SetNext(index)
-                        screen.SetContent(items[index])
-                        progress = 0
-                        timer.Mark()
-                        player.Play()
+                    if player.GotoNext() = true
+                        screen.SetContent(player.GetCurrent())
                     else if options.DoesExist("fetchMore") then
                         items = options.fetchMore()     
                         if items.count() > 0 then
-                            index = 0
-                            player.Stop()
-                            screen.SetContent(items[index])
                             player.SetContentList(items)
-                            player.SetNext(index)
-                            progress = 0
-                            timer.Mark()
                             player.Play()
+                            screen.SetContent(player.GetCurrent())
                         else
                             exit while
                         end if
@@ -534,22 +618,16 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             if msg.isListItemSelected() then
                 index = msg.GetIndex()
                 screen.SetContent(items[index])
-                progress = 0
-                timer.Mark()
+                player.ResetProgress()
             else if msg.isStatusMessage() then
                 if msg.getmessage() = "start of play" then
                 else if msg.getmessage() = "end of playlist" then
                     if options.DoesExist("fetchMore") then
                         items = options.fetchMore()     
                         if items.count() > 0 then
-                            index = 0
-                            player.Stop()
-                            screen.SetContent(items[index])
                             player.SetContentList(items)
-                            player.SetNext(index)
-                            progress = 0
-                            timer.Mark()
                             player.Play()
+                            screen.SetContent(player.GetCurrent())
                         else
                             exit while
                         end if
@@ -557,6 +635,26 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                 end if
             end if
         end If
+
+        ' Update the buttons
+        if msg <> invalid then
+            screen.AllowUpdates(false)
+            updateButtons = false
+            screen.ClearButtons()
+            if player.paused then
+                screen.AddButton(1, "Play")
+            else
+                screen.AddButton(1, "Pause")
+            end if
+            if player.GetPrev() <> invalid then
+                screen.AddButton(2, "Prev - " + player.GetPrev().Title)
+            end if
+            if player.GetNext() <> invalid then
+                screen.AddButton(3, "Next - " + player.GetNext().Title)
+            end if
+            screen.AddButton(4, "Show Queue")
+            screen.AllowUpdates(true)
+        end if
     end while
 end function
 
