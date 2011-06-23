@@ -776,7 +776,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function GetRandomSongs(count=100 as Integer) as Object
+function GetRandomSongs(count=20 as Integer) as Object
     xfer = CreateObject("roURLTransfer")
     xfer.SetURL(createSubsonicUrl("getRandomSongs.view", {size: Stri(count).Trim()}))
     xferResult = xfer.GetToString()
