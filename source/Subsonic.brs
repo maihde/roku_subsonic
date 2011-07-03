@@ -53,6 +53,8 @@ Sub Main()
        else if item.Type = "button" then
            if item.id = "settings" then
                ShowConfigurationScreen()
+                ' Load the main screen data
+                LoadMainScreenData()
            else if item.id = "shuffle" then
                PlayRandom()
            else if item.id = "index" then
@@ -159,7 +161,7 @@ function ShowConfigurationScreen()
                     exit while
                 else if msg.isButtonPressed() then
                     if msg.getIndex() = 1 then
-                        value = GetInput("Server Address", getServerUrl(), "Enter the server address", 30)
+                        value = GetInput("Server Address", getServerUrl(), "Enter the server address and port (i.e. 'server:4040')", 30)
                         if value <> invalid then
                             setServerUrl(value)
                         end if
@@ -1130,7 +1132,10 @@ REM ***************************************************************
 function getBaseUrl() as Dynamic
     serverUrl = getServerUrl()
     if serverUrl <> invalid then
-        return "http://" + serverUrl + "/rest"
+        if left(serverUrl, 7) <> "http://" then
+            serverUrl = "http://" + serverUrl
+        end if
+        return serverUrl + "/rest"
     else
         return invalid
     end if

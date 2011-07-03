@@ -40,11 +40,10 @@ Known Issues
 
 TODO
 ----------------------------------
-1. Changing server settings doesn't cause the main screen to reload
-2. Add playback position indicator in SpringBoard
-3. Add comments for functions
-4. Add true playlist, similar to Subsonic webpage player, where albums/songs can be added to the playlist
-5. Add support for Subsonic playlists
-6. Add checking for Subsonic server API version
-7. Add support to view the "getNowPlaying.view" information on the main screen
-8. Get lyrics from springboard page
+1. Add comments for functions
+2. Add true playlist, similar to Subsonic webpage player, where albums/songs can be added to the playlist
+3. Add support for Subsonic playlists
+4. Add checking for Subsonic server API version
+5. Add support to view the "getNowPlaying.view" information on the main screen
+6. Access lyrics from springboard page
+7. Error checking when server is down
