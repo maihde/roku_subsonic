@@ -620,6 +620,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             if msg.isListItemSelected() then
                 index = msg.GetIndex()
                 screen.SetContent(items[index])
+                player.index = index
                 player.ResetProgress()
             else if msg.isStatusMessage() then
                 if msg.getmessage() = "start of play" then
