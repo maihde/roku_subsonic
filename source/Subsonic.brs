@@ -531,7 +531,6 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.SetContent(player.items[index])
     screen.SetDescriptionStyle("audio")
     screen.SetTitle(player.items[index].Title)
-    screen.SetProgressIndicatorEnabled(true)
     screen.SetStaticRatingEnabled(false)
     screen.ClearButtons()
     if paused then
@@ -549,8 +548,13 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.AllowNavLeft(true)
     screen.AllowNavRight(true)
     
-    
-    screen.SetProgressIndicator(player.progress, player.GetCurrent().length)
+    if player.GetCurrent().length <> invalid then 
+        screen.SetProgressIndicatorEnabled(true)
+        screen.SetProgressIndicator(player.progress, player.GetCurrent().length)
+    else
+        screen.SetProgressIndicatorEnabled(false)
+    end if
+
     if not paused then
         player.Play()
     end if
@@ -565,8 +569,13 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
         
         ' Update the progress indicator
         if player.GetCurrent() <> invalid then
-            progress = player.GetProgress()
-            screen.SetProgressIndicator(progress, player.GetCurrent().length)
+            if player.GetCurrent().length <> invalid then
+                progress = player.GetProgress()
+                screen.SetProgressIndicatorEnabled(true)
+                screen.SetProgressIndicator(progress, player.GetCurrent().length)
+            else
+                screen.SetProgressIndicatorEnabled(false)
+            end if
         end if
 
         'print "Got Message:";type(msg)
@@ -1287,6 +1296,7 @@ function CreateSongItemFromXml(song as Object) as Dynamic
         item.Length = strtoi(song@duration)
     else
         print "Missing duration "; song@title
+        item.Length = invalid 
     end if
     item.ShortDescriptionLine1 = song@title
     item.ShortDescriptionLine2 = song@album + " - " + song@artist
