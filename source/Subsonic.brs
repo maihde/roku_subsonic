@@ -437,6 +437,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         SetContentList : function(items as Object, index=0 as Integer)
             m.Stop()
             m.index = index
+            m.items = items
             m.audioPlayer.SetContentList(items)
         end function
 
