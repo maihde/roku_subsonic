@@ -47,3 +47,7 @@ TODO
 5. Add support to view the "getNowPlaying.view" information on the main screen
 6. Access lyrics from springboard page
 7. Error checking when server is down
+8. Add screensaver with album art (see sdk/examples/audioapp)
+9. Reload the main-screen when entering it, primarlily so that Recently Played is kept up-to-date
+10. Track version so we can notify users when the version get's updated
+11. Provide warning the first time a transcoded file is loading, telling the user about issue #1
