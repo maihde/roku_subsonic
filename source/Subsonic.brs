@@ -922,7 +922,7 @@ REM
 REM @returns the select item, or invalid if no selection was made
 REM ***************************************************************
 function DoSearch() as Dynamic
-    item = invalid
+    search_selection = invalid ' the item the user selected
 
     history = CreateObject("roSearchHistory")
 
@@ -1004,51 +1004,59 @@ function DoSearch() as Dynamic
            next
         end if
 
-        results_screen = CreateObject("roGridScreen")
-        results_screen.SetBreadcrumbText("Search results for '" + searchterm + "'", "")
-        results_screen.SetBreadcrumbEnabled(true)
-        results_screen.SetMessagePort(port)
-        results_screen.SetDisplayMode("scale-to-fill")
-        results_screen.SetGridStyle("flat-square")
-        results_screen.SetupLists(3)
-        results_screen.SetContentList(0, results.artists)
-        results_screen.SetContentList(1, results.albums)
-        results_screen.SetContentList(2, results.songs)
-        results_screen.SetListNames(["Artists", "Albums", "Songs"])
+        if results.artists.Count() > 0 or results.albums.Count() > 0 or results.songs.Count() > 0 then
 
-        results_screen.Show()
+            results_screen = CreateObject("roGridScreen")
+            results_screen.SetBreadcrumbText("Search results for '" + searchterm + "'", "")
+            results_screen.SetBreadcrumbEnabled(true)
+            results_screen.SetMessagePort(port)
+            results_screen.SetDisplayMode("scale-to-fill")
+            results_screen.SetGridStyle("flat-square")
+            results_screen.SetupLists(3)
+            results_screen.SetContentList(0, results.artists)
+            results_screen.SetContentList(1, results.albums)
+            results_screen.SetContentList(2, results.songs)
+            results_screen.SetListNames(["Artists", "Albums", "Songs"])
 
-        while true
-            msg = wait(0, port)
+            results_screen.Show()
 
-            print "rcvd "; type(msg)
-            if type(msg) = "roGridScreenEvent" then
-                if msg.isScreenClosed() then 
-                    exit while
-                else if msg.isListItemSelected() then
-                    row = msg.GetIndex()
-                    selection = msg.getData()
-                    if row = 0 then
-                        item = results.artists[selection]
-                    else if row = 1
-                        item = results.albums[selection]
-                    else if row = 2
-                        item = results.songs[selection]
+            while true
+                msg = wait(0, port)
+
+                print "rcvd "; type(msg)
+                if type(msg) = "roGridScreenEvent" then
+                    if msg.isScreenClosed() then 
+                        exit while
+                    else if msg.isListItemSelected() then
+                        row = msg.GetIndex()
+                        selection = msg.getData()
+                        if row = 0 then
+                            search_selection = results.artists[selection]
+                        else if row = 1
+                            search_selection = results.albums[selection]
+                        else if row = 2
+                            search_selection = results.songs[selection]
+                        end if
+                        Exit while
                     end if
-                    Exit while
-                end if
-            endif
-        end while
+                endif
+            end while
 
-        search_facade.ShowMessage("")
-        results_screen.Close()
-        ' A pause is necessary here, otherwise the results grid screen
-        ' messes up the redraw of the main grid screen
-        sleep(500)
-    end if
+            search_facade.ShowMessage("")
+            results_screen.Close()
+            ' A pause is necessary here, otherwise the results grid screen
+            ' messes up the redraw of the main grid screen
+            sleep(500)
 
+            return search_selection
+        else
+            ShowInformationalDialog("No results for: " + searchterm)
+        end if ' result.count() > 0
+    end if ' searchterm <> invalid
+    
     search_facade.Close()
-    return item
+    return search_selection
+
 end function
 
 REM ***************************************************************
