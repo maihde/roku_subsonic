@@ -41,8 +41,6 @@ Known Issues
 TODO
 ----------------------------------
 #. Make the use of port on server address optional (default to 4040)
-#. The isServerAlive merely checks that HTTP responds...not that the server is Subsonic
-#. When connection to server fails, show a message and not just an empty main screen
 #. Add true playlist, similar to Subsonic webpage player, where albums/songs can be added to the playlist
 #. Add support for Subsonic playlists
 #. Add checking for Subsonic server API version

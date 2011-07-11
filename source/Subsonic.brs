@@ -31,13 +31,17 @@ Sub Main()
 
     facade = CreateObject("roPosterScreen")
     facade.Show()
-    facade.ShowMessage("Loading...")
+    facade.ShowMessage("")
 
     ' Don't show the main screen until we have been configured
     while isConfigured() = false
        ShowConfigurationScreen()
     end while
 
+    ' Verify the server connection
+    TestServerConnection()
+
+    facade.ShowMessage("Loading...")
     ' Load the main screen data
     LoadMainScreenData()
 
@@ -182,12 +186,7 @@ function ShowConfigurationScreen()
                         if isConfigured() = false then
                             ShowErrorDialog("Configuration not complete")
                         else
-                            alive = isServerAlive()
-                            if alive = true then
-                                ShowInformationalDialog("Connection success!")
-                            else
-                                ShowErrorDialog("Failed to connect to server")
-                            end if
+                            TestServerConnection(false, false)
                         end if
                     else if msg.getIndex() = 5 then
                         doExit = true
@@ -1112,14 +1111,39 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function isServerAlive() as Boolean
-    url = getServerUrl()
-    xferResult = UrlTransferWithBusyDialog(url, "Checking server connection to " + url) 
+function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false as Boolean) as Boolean
+    alive = false
+    error = invalid
+
+    url = createSubsonicUrl("ping.view")
+    xferResult = UrlTransferWithBusyDialog(url, "Connecting")
     if xferResult.code = 200 then
-        return true
-    else
-        return false
+        print xferResult.data
+        xml = CreateObject("roXMLElement")
+        ' Run the gauntlet...only succeed if all tests pass
+        if xml.Parse(xferResult.data)
+            if xml.GetName() = "subsonic-response" then
+               if xml.GetAttributes().Lookup("status") = "ok" then
+                   ' xml.GetAttributes().Lookup("version") <> invalid  then
+                   alive = true
+               else if xml.error <> invalid then
+                   error = xml.error.GetAttributes().Lookup("message")
+               end if
+            end if 
+        end if
     end if
+
+    if alive = true and quiet_success = false then
+        ShowInformationalDialog("Connection success!")
+    else if alive = false and quiet_failure = false then
+        msg = "Failed to connect to server."
+        if error <> invalid then
+            msg = msg + " '" + error + "'"
+        end if 
+        ShowErrorDialog(msg)
+    end if
+
+    return false
 end function
 
 REM ***************************************************************
