@@ -40,14 +40,17 @@ Known Issues
 
 TODO
 ----------------------------------
-1. Add comments for functions
-2. Add true playlist, similar to Subsonic webpage player, where albums/songs can be added to the playlist
-3. Add support for Subsonic playlists
-4. Add checking for Subsonic server API version
-5. Add support to view the "getNowPlaying.view" information on the main screen
-6. Access lyrics from springboard page
-7. Error checking when server is down
-8. Add screensaver with album art (see sdk/examples/audioapp)
-9. Reload the main-screen when entering it, primarlily so that Recently Played is kept up-to-date
-10. Track version so we can notify users when the version get's updated
-11. Provide warning the first time a transcoded file is loading, telling the user about issue #1
+#. Make the use of port on server address optional (default to 4040)
+#. When connection to server fails, show a message and not just an empty main screen
+#. If a search results in no results, the screen show display a message rather than just showing "Loading..."
+#. Add true playlist, similar to Subsonic webpage player, where albums/songs can be added to the playlist
+#. Add support for Subsonic playlists
+#. Add checking for Subsonic server API version
+#. Add support to view the "getNowPlaying.view" information on the main screen
+#. Access lyrics from springboard page
+#. Error checking when server is down
+#. Add screensaver with album art (see sdk/examples/audioapp)
+#. Reload the main-screen when entering it, primarlily so that Recently Played is kept up-to-date
+#. Track version so we can notify users when the version get's updated
+#. Provide warning the first time a transcoded file is loading, telling the user about issue #1
+13. Add comments for functions
