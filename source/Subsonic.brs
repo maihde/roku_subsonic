@@ -1146,6 +1146,9 @@ function getBaseUrl() as Dynamic
         if left(serverUrl, 7) <> "http://" then
             serverUrl = "http://" + serverUrl
         end if
+        if instr(6, serverUrl, ":") = 0 then
+                serverUrl = serverUrl + ":4040"
+        end if
         return serverUrl + "/rest"
     else
         return invalid
