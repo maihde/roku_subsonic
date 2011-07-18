@@ -1143,12 +1143,26 @@ REM ***************************************************************
 function getBaseUrl() as Dynamic
     serverUrl = getServerUrl()
     if serverUrl <> invalid then
-        if left(serverUrl, 7) <> "http://" then
+        pathIndex = 0
+        if left(serverUrl, 7) <> "http://" and left(serverUrl, 8) <> "https://" then
             serverUrl = "http://" + serverUrl
+            pathIndex = 8
+        else 
+            if left(serverUrl, 7) = "http://" then
+                pathIndex = 8
+            else
+                pathIndex = 9
+            end if
         end if
-        if instr(6, serverUrl, ":") = 0 then
+        if instr(pathIndex, serverUrl, ":") = 0  and left(serverUrl, 8) <> "https://" then
+            if instr(pathIndex, serverUrl, "/") = 0 then
                 serverUrl = serverUrl + ":4040"
+            else
+                pathIndex = instr(pathIndex, serverUrl, "/")
+                serverUrl = mid(serverUrl, 1, pathIndex - 1) + ":4040" + mid(serverUrl, pathIndex)
+            end if
         end if
+        print "returning base URL:" + serverUrl
         return serverUrl + "/rest"
     else
         return invalid
