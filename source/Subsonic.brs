@@ -1180,10 +1180,10 @@ function getBaseUrl() as Dynamic
             serverUrl = "http://" + serverUrl
             pathIndex = 8
         else 
-            if left(serverUrl, 7) = "http://" then
-                pathIndex = 8
-            else
+            if left(serverUrl, 8) = "https://" then
                 pathIndex = 9
+            else
+                pathIndex = 8
             end if
         end if
         if instr(pathIndex, serverUrl, ":") = 0  and left(serverUrl, 8) <> "https://" then
@@ -1194,7 +1194,6 @@ function getBaseUrl() as Dynamic
                 serverUrl = mid(serverUrl, 1, pathIndex - 1) + ":4040" + mid(serverUrl, pathIndex)
             end if
         end if
-        print "returning base URL:" + serverUrl
         return serverUrl + "/rest"
     else
         return invalid
