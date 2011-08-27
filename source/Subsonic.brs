@@ -650,6 +650,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             else if msg.isStatusMessage() then
                 if msg.getmessage() = "start of play" then
                 else if msg.getmessage() = "end of playlist" then
+                    print "end of playlist"
                     if options.DoesExist("fetchMore") then
                         items = options.fetchMore()     
                         if items.count() > 0 then
@@ -657,8 +658,10 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                             player.Play()
                             screen.SetContent(player.GetCurrent())
                         else
-                            exit while
+                            exit while ' return to the home screen
                         end if
+                    else
+                        exit while ' return to the home screen
                     end if
                 end if
             end if
