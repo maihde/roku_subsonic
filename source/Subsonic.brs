@@ -862,7 +862,7 @@ function ShowIndex()
                 screen.SetFocusedListItem(0)
             else if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                ShowArtist(Indexes[curIndex][msg.GetIndex()])
+                ShowArtist(Indexes[curIndex, msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             endif
