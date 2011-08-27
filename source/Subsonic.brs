@@ -497,6 +497,22 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         GotoPrev: function() as Boolean
             return m.Goto(m.index - 1)
         end function
+        
+        ' Similar to the back button on a CD player...if pressed within
+        ' the first two seconds of a song, goes to the previous song.
+        ' if pressed after the first five seconds (normally it seems
+        ' 2 secs is standard...but the roku can have significant lag...
+        ' so give the user 5 seconds, goes to the start of the 
+        ' song
+        Back: function() as Boolean
+            if m.GetProgress() > 5 then
+                ' audioPlayer.Seek() does not work for MP3 (see http://forums.roku.com/viewtopic.php?f=34&t=30673&p=186946)
+                m.Goto(m.index)
+                return false
+            else
+                return m.GotoPrev()
+            end if
+        end function
 
         Goto: function(index as Integer) as Boolean
             if index >= 0 and index < m.items.Count() then
@@ -592,7 +608,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                         player.Pause()
                     end if
                 else if msg.getIndex() = 2 then
-                    player.GotoPrev()
+                    player.GotoPrev()  ' Explictly use .GotoPrev instead of .Back
                     screen.SetContent(player.GetCurrent())
                 else if msg.getIndex() = 3 then
                     player.GotoNext()
@@ -607,7 +623,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             else if msg.isRemoteKeyPressed() then
                 i = msg.getIndex()
                 if i = 4 then ' left
-                    if player.GotoPrev() then
+                    if player.Back() then ' Back returns true if the song is changed
                         screen.SetContent(player.GetCurrent())
                     end if
                 else if i = 5 then ' right
