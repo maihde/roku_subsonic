@@ -69,6 +69,9 @@ install: $(APPNAME)
 pkg: install
 	@echo "*** Creating Package ***"
 
+	@echo "  >> updating build_version"
+	sed -i s/^build_version=.*/build_version=`date +%y%m%d`/ manifest
+
 	@echo "  >> creating destination directory $(PKGREL)"	
 	@if [ ! -d $(PKGREL) ]; \
 	then \
