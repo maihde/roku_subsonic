@@ -434,7 +434,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         end function
 
         SetContentList : function(items as Object, index=0 as Integer)
-            m.Stop()
+            m.f_Stop()
             m.index = index
             m.items = items
             m.audioPlayer.SetContentList(items)
@@ -459,9 +459,9 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
             m.paused = false
         end function
         
-        Stop: function()
+        f_Stop: function()
             m.timer.Mark()
-            m.audioPlayer.Stop()
+            m.audioPlayer.f_Stop()
             m.paused = true
         end function
 
@@ -491,11 +491,11 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         end function
 
         GotoNext: function() as Boolean
-            return m.Goto(m.index + 1)
+            return m.f_Goto(m.index + 1)
         end function
 
         GotoPrev: function() as Boolean
-            return m.Goto(m.index - 1)
+            return m.f_Goto(m.index - 1)
         end function
         
         ' Similar to the back button on a CD player...if pressed within
@@ -514,11 +514,11 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
             end if
         end function
 
-        Goto: function(index as Integer) as Boolean
+        f_Goto: function(index as Integer) as Boolean
             if index >= 0 and index < m.items.Count() then
                 print "Setting index "; index
                 m.index = index
-                m.audioPlayer.Stop()
+                m.audioPlayer.f_Stop()
                 m.audioPlayer.SetNext(m.index)
                 m.progress = 0
                 m.timer.Mark()
@@ -616,7 +616,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                 else if msg.getIndex() = 4 then
                     i = ShowPlayQueue(items, index, options.playQueueStyle)
                     if (i > 0) and (i <> player.index) then
-                        player.Goto(i)
+                        player.f_Goto(i)
                         screen.SetContent(player.GetCurrent())
                     end if
                 end if
@@ -648,8 +648,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                 player.index = index
                 player.ResetProgress()
             else if msg.isStatusMessage() then
-                if msg.getmessage() = "start of play" then
-                else if msg.getmessage() = "end of playlist" then
+                if msg.getmessage() = "end of playlist" then
                     print "end of playlist"
                     if options.DoesExist("fetchMore") then
                         items = options.fetchMore()     
@@ -880,7 +879,7 @@ function ShowIndex()
                 screen.SetFocusedListItem(0)
             else if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                ShowArtist(Indexes[curIndex][msg.GetIndex()])
+                ShowArtist(Indexes[curIndex, msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             endif
@@ -1143,10 +1142,20 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
         if xml.Parse(xferResult.data)
             if xml.GetName() = "subsonic-response" then
                if xml.GetAttributes().Lookup("status") = "ok" then
-                   ' xml.GetAttributes().Lookup("version") <> invalid  then
                    alive = true
                else if xml.error <> invalid then
-                   error = xml.error.GetAttributes().Lookup("message")
+                   if xml.GetAttributes().Lookup("version") <> invalid  then
+                        sVersion = xml.GetAttributes().Lookup("version")
+                        cVersion = getApiVersion()
+                        error = getVersionErrMsg(cVersion, sVersion)
+                        if error <> "OK" then
+                            alive = false
+                            versionErr = true
+                        end if
+                   end if
+                   if versionErr <> true then
+                        error = xml.error.GetAttributes().Lookup("message")
+                   end if
                end if
             end if 
         end if
@@ -1163,6 +1172,29 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
     end if
 
     return false
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function getVersionErrMsg(cVersion as String, sVersion as String) as String
+    cvParts = cVersion.Tokenize(".")
+    cMajor = cvParts[0]
+    cMinor = cvParts[1]
+    svParts = sVersion.Tokenize(".")
+    sMajor = svParts[0]
+    sMinor = svParts[1]
+    compatible = true
+    if cMajor <> sMajor then
+        compatible = false
+    else if Val(sMinor) < val(cMinor) then
+        compatible = false
+    end if
+    if compatible = true then
+        return "OK"
+    else 
+        return "Server API version " + cMajor + "." + cMinor + ".x" +  " or later required"
+    end if
 end function
 
 REM ***************************************************************
@@ -1223,7 +1255,7 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function getApiVersion() as String
-  return "1.5.0"
+  return "1.4.0"
 End function
 
 REM ***************************************************************
