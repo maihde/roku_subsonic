@@ -134,6 +134,10 @@ function CreateConfigurationScreen(port as Object) as Object
     if password = invalid then
         password = ""
     end if
+    screen.AddParagraph("Software Information") 
+    screen.AddParagraph(" Version: " + getSoftwareVersion().version)
+    screen.AddParagraph(" Minimum Required Server Version: " + getApiVersion())
+    
     screen.AddParagraph("Current Configuration")    
     screen.AddParagraph(" Server Address: " + serverUrl)    
     screen.AddParagraph(" Username: " + username)    
@@ -1256,6 +1260,41 @@ REM
 REM ***************************************************************
 function getApiVersion() as String
   return "1.4.0"
+End function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function getSoftwareVersion() as Object
+    ' Return the value as an associative array
+    result = CreateObject("roAssociativeArray")
+    result.major = 0
+    result.minor = 0
+    result.build_version = 0
+    result.version = ""
+    
+    ' Load the manifest
+    mf = ReadAsciiFile("pkg:/manifest")
+    
+    ' Parse out the version information
+    lines = mf.Tokenize(chr(10))
+    for each line in lines
+        if StartsWith(line, "major_version=") then
+            result.major = mid(line, len("major_version=")+1)
+            result.major = strtoi(result.major)
+        else if StartsWith(line, "minor_version=") then
+            result.minor = mid(line, len("minor_version=")+1)
+            result.minor = strtoi(result.minor)
+        else if StartsWith(line, "build_version=") then            
+            result.build = mid(line, len("build_version=")+1)
+            result.build = strtoi(result.build) 
+        end if
+    end for
+    
+    result.version = str(result.major) + "." + str(result.minor) + "." + str(result.build)
+    print "Manifest Version: " + result.version
+    
+    return result
 End function
 
 REM ***************************************************************
