@@ -37,6 +37,9 @@ Sub Main()
     while isConfigured() = false
        ShowConfigurationScreen()
     end while
+    
+    ' Check to see if there has been an upgrade
+    DisplayUpgradeNoticeIfNecessary()
 
     ' Verify the server connection
     TestServerConnection()
@@ -1295,6 +1298,40 @@ function getSoftwareVersion() as Object
     print "Manifest Version: " + result.version
     
     return result
+End function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function getLastRunVersion() As Dynamic
+    sec = CreateObject("roRegistrySection", "Subsonic")
+    if sec.Exists("LastRunVersion")
+        return sec.Read("LastRunVersion")
+    endif
+    return invalid
+End Function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function setLastRunVersion(version as String)
+    sec = CreateObject("roRegistrySection", "Subsonic")
+    sec.Write("LastRunVersion", version)
+End Function
+
+REM ***************************************************************
+REM If the version number stored in the registry does not match
+REM the version of this software, as read from the manifest,
+REM display a message to the user that a software upgrade has
+REM occured
+REM ***************************************************************
+function DisplayUpgradeNoticeIfNecessary()
+    swver = getSoftwareVersion().version
+    lastver = GetLastRunVersion()
+    if lastver <> invalid and swver <> lastver then
+        ShowInformationalDialog("Subsonic player has been upgraded from " + lastver + " to " + swver)
+    end if
+    setLastRunVersion(swver)
 End function
 
 REM ***************************************************************
