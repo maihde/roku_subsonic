@@ -507,7 +507,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         Back: function() as Boolean
             if m.GetProgress() > 5 then
                 ' audioPlayer.Seek() does not work for MP3 (see http://forums.roku.com/viewtopic.php?f=34&t=30673&p=186946)
-                m.Goto(m.index)
+                m.f_Goto(m.index)
                 return false
             else
                 return m.GotoPrev()
