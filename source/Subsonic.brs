@@ -468,7 +468,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         
         f_Stop: function()
             m.timer.Mark()
-            m.audioPlayer.f_Stop()
+            m.audioPlayer.Stop()
             m.paused = true
         end function
 
@@ -525,11 +525,9 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
             if index >= 0 and index < m.items.Count() then
                 print "Setting index "; index
                 m.index = index
-                m.audioPlayer.f_Stop()
+                m.f_Stop()
                 m.audioPlayer.SetNext(m.index)
-                m.progress = 0
-                m.timer.Mark()
-                m.audioPlayer.Play()
+                m.Play()
                 return true
             else
                 return false
