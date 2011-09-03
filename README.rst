@@ -49,6 +49,7 @@ Version 1.3
 ~~~~~~~~~~~
 #. Reload the main-screen categories when re-entering it, but do so in the background so that the user-interface is snappy
 #. Add support to browse and play Subsonic playlists
+#. When in suffle mode, fetch more when there is only one song left such that the Next->Button always has a valid entry
 
 Version 1.4
 ~~~~~~~~~~~
