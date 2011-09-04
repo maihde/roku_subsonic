@@ -24,7 +24,7 @@ REM
 REM ******************************************************
 Sub Main()
     print "Entering Main"
-    ' SetMainAppIsRunning()
+    SetMainAppIsRunning("true")
     
     ' Set up the basic color scheme
     SetTheme()
@@ -80,6 +80,7 @@ Sub Main()
 
     facade.Close()
     print "Exiting Main"
+    SetMainAppIsRunning("false")
 end Sub
 
 REM ******************************************************
@@ -364,9 +365,7 @@ function ShowMainScreen() as Object
             next        
         end if
     end while
-                
     screen.Close()
-
     return item
 
 end function
@@ -408,7 +407,6 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         print "No Items"
         return invalid
     end if
-
  
     port=CreateObject("roMessagePort")
 
@@ -461,7 +459,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         
         f_Stop: function()
             m.timer.Mark()
-            m.audioPlayer.f_Stop()
+            m.audioPlayer.Stop()
             m.paused = true
         end function
 
@@ -502,7 +500,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
             if index >= 0 and index < m.items.Count() then
                 print "Setting index "; index
                 m.index = index
-                m.audioPlayer.f_Stop()
+                m.audioPlayer.Stop()
                 m.audioPlayer.SetNext(m.index)
                 m.progress = 0
                 m.timer.Mark()
@@ -643,6 +641,8 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                             exit while
                         end if
                     end if
+                else if msg.getMessage() = "start of play"
+                    setScreenSaverCoverArtUrl(player.items[player.index])
                 end if
             end if
         end If
@@ -860,7 +860,7 @@ function ShowIndex()
                 screen.SetFocusedListItem(0)
             else if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                ShowArtist(Indexes[curIndex, msg.GetIndex()])
+                ShowArtist(Indexes[curIndex][msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             endif
@@ -1403,4 +1403,16 @@ function CreateSongItemFromXml(song as Object) as Dynamic
     endif
 
     return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function setScreenSaverCoverArtUrl(item as dynamic) 
+    if item.HDPosterUrl <> invalid and item.SDPosterUrl <> invalid then
+        SaveCoverArtForScreenSaver(item.HDPosterUrl, item.SDPosterUrl)
+    else 
+        SaveCoverArtForScreenSaver("", "")
+        'use default image if current item has no cover art
+    end if
 end function
