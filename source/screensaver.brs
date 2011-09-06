@@ -33,23 +33,27 @@ Sub DisplayScreenSaver()
     m.default_sd43 = {url:"pkg:/images/Logo_Overhang_Roku_SDK_SD43.png" , SourceRect:{w:222,h:45}  , TargetRect:{x:0,y:0,w:0,h:0}}
 
     m.default_image = CreateDefaultScreensaverImage()
-
     canvas = CreateScreensaverCanvas("#000000")
     canvas.SetImageFunc(GetCoverArtImage)
-    ' Always use bouncing for now. Smooth doesn't work quite right.
-    ' For smooth to work the script needs to download the cover art to
-    ' the tmp file system for setting content on the graphics canvas.
-    if (Rnd(1) <> 1) then
-        print "Running random bouncing logo."
+    mode = getScreensaverMode()
+    initialMode = Rnd(3)
+    if (mode = "Bouncing Animation" or (mode = "Random" and initialMode = 1)) then
+        print "Running bouncing animation mode."
         canvas.SetLocFunc(screensaverLib_RandomLocation)
         canvas.SetUpdatePeriodInMS(6000)
         canvas.SetUnderscan(.09)
-    else
-        print "Running smooth animation logo."
+    else if (mode = "Smooth Animation" or (mode = "Random" and initialMode = 2)) then
+        print "Running smooth animation mode."
         canvas.SetLocFunc(screensaverLib_SmoothAnimation)
         canvas.SetUpdatePeriodInMS(50)
         canvas.SetUnderscan(.07)
+    else if (mode = "Corners" or (mode = "Random" and initialMode = 3)) then
+        print "Running Corners animation mode."
+        canvas.SetLocFunc(screensaverLib_CornerLocations)
+        canvas.SetUpdatePeriodInMS(6000)
+        canvas.SetUnderscan(.09)
     end if
+    canvas.mode = initialMode
     canvas.Go()
     
 End Sub
@@ -151,9 +155,7 @@ End Function
 ' Called from the main application when the song changes so
 ' that the screensaver has the most recent cover art.
 Sub SaveCoverArtForScreenSaver(url_SD43,url_HD)
-    print "Saving Cover Art URL: " ; url_SD43
     WriteFileHelper("tmp:/cover_art_url_SD43",url_SD43)
-    print "Saving Cover Art URL: " ; url_HD
     WriteFileHelper("tmp:/cover_art_url_HD"  ,url_HD)
 End Sub
 

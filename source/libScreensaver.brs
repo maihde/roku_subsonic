@@ -52,6 +52,8 @@ Function CreateScreensaverCanvas(background_color = invalid, prt=invalid, loc_fu
     o.update_period     = 6000
     ' Default of 0, which really means at the same time as the update_period
     o.loc_update_period = 0
+    ' Period for changing screensaver mode when Random mode selected
+    o.mode_update_period = 60000
     
     ' Create a message port if one wasn't provided.
     if (o.prt=invalid) then o.prt = CreateObject("roMessagePort")
@@ -61,6 +63,7 @@ Function CreateScreensaverCanvas(background_color = invalid, prt=invalid, loc_fu
     canvas_size = o.canvas.GetCanvasRect()
     o.raw_scr = {width:canvas_size.w,height:canvas_size.h}
     o.scr = o.raw_scr
+    o.mode = invalid
     return o
 End Function
 
@@ -69,8 +72,10 @@ End Function
 Sub screensaverCanvas_Go() 
     loc_timer   =  CreateObject("roTimespan")
     update_timer =  CreateObject("roTimespan")
+    mode_timer =  CreateObject("roTimespan")
     loc_timer.Mark()
     update_timer.Mark()
+    mode_timer.Mark()
     m.canvas.Show()
     first_time=true
 
@@ -88,6 +93,11 @@ Sub screensaverCanvas_Go()
                         newloc = true
                         loc_timer.Mark()
                     end if
+                    if (getScreensaverMode() = "Random" and mode_timer.TotalMilliseconds() > m.mode_update_period) then 
+                        setNewMode(m)
+                        newLoc = true
+                        mode_timer.Mark()
+                    end if
                     update_timer.Mark()
                     m.Update(newloc)
                 end if
@@ -99,6 +109,34 @@ Sub screensaverCanvas_Go()
          end if
      end while
 End Sub
+
+Sub setNewMode(canvas as Object)
+    'ensure new mode is not same as old one
+    mode = canvas.mode
+    while mode = canvas.mode
+        mode = Rnd(3)
+    end while
+    canvas.mode = mode
+    canvas_size = canvas.canvas.GetCanvasRect()
+    canvas.raw_scr = {width:canvas_size.w,height:canvas_size.h}
+    canvas.scr = canvas.raw_scr
+    if (mode = 1) then
+        print "Running bouncing animation mode."
+        canvas.SetLocFunc(screensaverLib_RandomLocation)
+        canvas.SetUpdatePeriodInMS(6000)
+        canvas.SetUnderscan(.09)
+    else if (mode = 2) then
+        print "Running smooth animation mode."
+        canvas.SetLocFunc(screensaverLib_SmoothAnimation)
+        canvas.SetUpdatePeriodInMS(50)
+        canvas.SetUnderscan(.07)
+    else if (mode = 3) then
+        print "Running Corners animation mode."
+        canvas.SetLocFunc(screensaverLib_CornerLocations)
+        canvas.SetUpdatePeriodInMS(6000)
+        canvas.SetUnderscan(.09)
+    end if
+end Sub
 
 ' Equivalent to a single iteration of Go(). This is useful if the caller
 ' wants to control the main UI loop. Everytime this method is called the screen is
@@ -163,23 +201,32 @@ End Function
 '
 ' Uses loc to store the last corner generated.
 Function screensaverLib_CornerLocations(scr, image_width, image_height, loc)
-    ' TOP LEFT is the default
-    if (loc = invalid) then loc = {x:scr.x,y:scr.y,corner:0}
-    if (loc.corner = 3) then
-        loc.corner = 0
-    else
-        loc.corner = loc.corner + 1
+    ' Ensure a different corner is chosen
+    if (loc = invalid) then
+        loc = {x:scr.x,y:scr.y,corner:invalid}
     end if
+    corner = loc.corner
+    while corner = loc.corner
+        corner = Rnd(4)
+    end while
+    loc.corner = corner
+    
     if (loc.corner = 1) then
         'TOP RIGHT
         loc.x = scr.width + scr.x - image_width
+        loc.y = scr.y
     else if (loc.corner = 2) then
         'BOTTOM RIGHT
         loc.x = scr.width  + scr.x - image_width
         loc.y = scr.height + scr.y - image_height
-    else if (loc = 3) then
+    else if (loc.corner = 3) then
         'BOTTOM LEFT
+        loc.x = scr.x
         loc.y = scr.height + scr.y - image_height
+    else if (loc.corner = 4) then
+        'TOP LEFT
+        loc.x = scr.x
+        loc.y = scr.y
     end if
     return loc
 End Function
@@ -192,7 +239,7 @@ End Function
 ' Uses loc to store the current velocity in addition to the last location.
 Function screensaverLib_SmoothAnimation(scr, image_width, image_height, loc)
     ' Pick a random start location
-    if (loc = invalid) then
+    if (loc = invalid or loc.velocity_x = invalid or loc.velocity_y = invalid) then
         loc = screensaverLib_RandomLocation(scr,image_width,image_height,invalid)
         loc.velocity_x=1
         loc.velocity_y=1
