@@ -538,6 +538,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
                 m.progress = 0
                 m.timer.Mark()
                 m.audioPlayer.Play()
+                m.paused = false
                 return true
             else
                 return false
@@ -630,7 +631,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                     screen.SetContent(player.GetCurrent())
                 else if msg.getIndex() = 4 then
                     i = ShowPlayQueue(items, index, options.playQueueStyle)
-                    if (i > 0) and (i <> player.index) then
+                    if (i >= 0) and (i <> player.index) then
                         player.f_Goto(i)
                         screen.SetContent(player.GetCurrent())
                     end if
@@ -638,7 +639,9 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             else if msg.isRemoteKeyPressed() then
                 i = msg.getIndex()
                 if i = 4 then ' left
-                    if player.GotoPrev() then
+                    if player.timer.TotalSeconds() >= 2 then
+                        player.f_Goto(player.index)
+                    else if player.GotoPrev() then
                         screen.SetContent(player.GetCurrent())
                     end if
                 else if i = 5 then ' right
@@ -676,6 +679,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                     end if
                 else if msg.getMessage() = "start of play"
                     setScreenSaverCoverArtUrl(player.items[player.index])
+                    player.timer.Mark()
                 end if
             end if
         end If
