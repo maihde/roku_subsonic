@@ -87,7 +87,7 @@ Sub Main()
            end if
        end if
     end while
-
+    
     facade.Close()
     print "Exiting Main"
     SetMainAppIsRunning("false")
@@ -594,7 +594,6 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.AllowUpdates(true)
     screen.Show()
 
-
     while true
         'print "Waiting for message from Springboard"
         msg = wait(1000, port)
@@ -676,6 +675,8 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                         else
                             exit while
                         end if
+                    else 
+                        exit while
                     end if
                 else if msg.getMessage() = "start of play"
                     setScreenSaverCoverArtUrl(player.items[player.index])
