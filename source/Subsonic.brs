@@ -24,7 +24,13 @@ REM
 REM ******************************************************
 Sub Main()
     print "Entering Main"
-    ' SetMainAppIsRunning()
+    m.screensaverModes = createObject("roList")
+    m.screensaverModes.addTail("Smooth Animation")
+    m.screensaverModes.addTail("Bouncing Animation")
+    m.screensaverModes.addTail("Corners")
+    m.screensaverModes.addTail("Random")
+    
+    SetMainAppIsRunning("true")
     
     ' Set up the basic color scheme
     SetTheme()
@@ -46,6 +52,10 @@ Sub Main()
     LoadMainScreenData()
 
     facade.ShowMessage("")
+    
+    REM un-comment for screensaver dev testing. Screensaver will run immediately and endlessly with test image, and app will not run
+    'SaveCoverArtForScreenSaver("file://pkg:/images/subsonic.png", "file://pkg:/images/subsonic.png")
+    'RunScreenSaver()
     
     ' Show the main screen
     while true
@@ -77,9 +87,10 @@ Sub Main()
            end if
        end if
     end while
-
+    
     facade.Close()
     print "Exiting Main"
+    SetMainAppIsRunning("false")
 end Sub
 
 REM ******************************************************
@@ -134,14 +145,20 @@ function CreateConfigurationScreen(port as Object) as Object
     if password = invalid then
         password = ""
     end if
+    screensaverMode = getScreensaverMode()
+     if screensaverMode = invalid then
+        screensaverMode = ""
+    end if
     screen.AddParagraph("Current Configuration")    
     screen.AddParagraph(" Server Address: " + serverUrl)    
     screen.AddParagraph(" Username: " + username)    
     screen.AddParagraph(" Password: " + password)    
+    screen.AddParagraph(" Screensaver Mode: " + screensaverMode)
 
     screen.AddButton(1, "Set Server Address")
     screen.AddButton(2, "Set Username")
     screen.AddButton(3, "Set Password")
+    screen.AddButton(6, "Change Screensaver Mode")
     screen.AddButton(4, "Test Connection")
     screen.AddButton(5, "Ok")
     return screen
@@ -158,6 +175,7 @@ function ShowConfigurationScreen()
     doExit = false
     while doExit = false ' Keep looping until the configuration is complete
         while true
+            screensaverModeChanged = false
             msg = wait(0, port)
             if type(msg) = "roParagraphScreenEvent" then
                 if msg.isScreenClosed() then
@@ -188,8 +206,16 @@ function ShowConfigurationScreen()
                         else
                             TestServerConnection(false, false)
                         end if
+                        exit while
                     else if msg.getIndex() = 5 then
                         doExit = true
+                        exit while
+                    else if msg.getIndex() = 6 then
+                        screensaverModeChanged = true
+                        value = getNextScreensaverMode()
+                        if value <> invalid then
+                            setScreensaverMode(value)
+                        end if
                         exit while
                     end if
                 end if
@@ -198,6 +224,14 @@ function ShowConfigurationScreen()
 
         if doExit = false then
             newScreen = CreateConfigurationScreen(port)
+            'highlight next button, except if screensaver mode button was pressed, highlight it again
+            if msg.getIndex() = 6 then
+                newScreen.setDefaultMenuItem(3)
+            else if msg.getIndex() = 4 then
+                newScreen.setDefaultMenuItem(5)
+            else
+                newScreen.setDefaultMenuItem(msg.getIndex())
+            end if
             newScreen.Show()
             screen.Close()
             screen = newScreen
@@ -364,9 +398,7 @@ function ShowMainScreen() as Object
             next        
         end if
     end while
-                
     screen.Close()
-
     return item
 
 end function
@@ -408,7 +440,6 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         print "No Items"
         return invalid
     end if
-
  
     port=CreateObject("roMessagePort")
 
@@ -461,7 +492,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         
         f_Stop: function()
             m.timer.Mark()
-            m.audioPlayer.f_Stop()
+            m.audioPlayer.Stop()
             m.paused = true
         end function
 
@@ -502,11 +533,12 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
             if index >= 0 and index < m.items.Count() then
                 print "Setting index "; index
                 m.index = index
-                m.audioPlayer.f_Stop()
+                m.f_Stop()
                 m.audioPlayer.SetNext(m.index)
                 m.progress = 0
                 m.timer.Mark()
                 m.audioPlayer.Play()
+                m.paused = false
                 return true
             else
                 return false
@@ -562,7 +594,6 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.AllowUpdates(true)
     screen.Show()
 
-
     while true
         'print "Waiting for message from Springboard"
         msg = wait(1000, port)
@@ -599,7 +630,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                     screen.SetContent(player.GetCurrent())
                 else if msg.getIndex() = 4 then
                     i = ShowPlayQueue(items, index, options.playQueueStyle)
-                    if (i > 0) and (i <> player.index) then
+                    if (i >= 0) and (i <> player.index) then
                         player.f_Goto(i)
                         screen.SetContent(player.GetCurrent())
                     end if
@@ -607,7 +638,9 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
             else if msg.isRemoteKeyPressed() then
                 i = msg.getIndex()
                 if i = 4 then ' left
-                    if player.GotoPrev() then
+                    if player.timer.TotalSeconds() >= 2 then
+                        player.f_Goto(player.index)
+                    else if player.GotoPrev() then
                         screen.SetContent(player.GetCurrent())
                     end if
                 else if i = 5 then ' right
@@ -642,7 +675,12 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                         else
                             exit while
                         end if
+                    else 
+                        exit while
                     end if
+                else if msg.getMessage() = "start of play"
+                    setScreenSaverCoverArtUrl(player.items[player.index])
+                    player.timer.Mark()
                 end if
             end if
         end If
@@ -860,7 +898,8 @@ function ShowIndex()
                 screen.SetFocusedListItem(0)
             else if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                ShowArtist(Indexes[curIndex, msg.GetIndex()])
+                selIndex = Indexes[curIndex]
+                ShowArtist(selIndex[msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             endif
@@ -1316,6 +1355,53 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
+function getScreensaverMode() as Dynamic 
+    sec = CreateObject("roRegistrySection", "Settings")
+    if sec.Exists("screensaverMode") then
+        return sec.Read("screensaverMode")
+    else
+        return getDefaultScreensaverMode()
+    end if
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function getNextScreensaverMode() as Dynamic 
+    m.screensaverModes.Reset()
+    currentMode = getScreensaverMode()
+    while  m.screenSaverModes.IsNext()
+        item = m.screenSaverModes.Next()
+        if item = currentMode then
+            if m.screensaverModes.IsNext()
+                return m.screensaverModes.Next()
+            else
+                return m.screensaverModes.GetHead()
+            end if
+        end if
+    end while
+    return invalid
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function getDefaultScreensaverMode() as String 
+    return m.screensaverModes.GetHead() 'Smooth
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function setScreensaverMode(mode as String) as String
+    sec = CreateObject("roRegistrySection", "Settings")
+    sec.Write("screensaverMode", mode)
+    sec.Flush()
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
 function getClient() as String
   return "roku"
 end function
@@ -1403,4 +1489,16 @@ function CreateSongItemFromXml(song as Object) as Dynamic
     endif
 
     return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function setScreenSaverCoverArtUrl(item as dynamic) 
+    if item.HDPosterUrl <> invalid and item.SDPosterUrl <> invalid then
+        SaveCoverArtForScreenSaver(item.HDPosterUrl, item.SDPosterUrl)
+    else 
+        SaveCoverArtForScreenSaver("", "")
+        'use default image if current item has no cover art
+    end if
 end function
