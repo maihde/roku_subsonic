@@ -1459,6 +1459,7 @@ function InitializeScreensaver()
         print "Setting default screen-saver in registry"
         setScreensaverMode(m.screensaverModes.GetHead()) 'Smooth
     end if
+    SaveCoverArtForScreenSaver("file://pkg:/images/subsonic.png", "file://pkg:/images/subsonic.png")
 end function
 
 REM ***************************************************************
@@ -1599,9 +1600,9 @@ REM
 REM ***************************************************************
 function setScreenSaverCoverArtUrl(item as dynamic) 
     if item.HDPosterUrl <> invalid and item.SDPosterUrl <> invalid then
-        SaveCoverArtForScreenSaver(item.HDPosterUrl, item.SDPosterUrl)
+        SaveCoverArtForScreenSaver(item.SDPosterUrl, item.HDPosterUrl)
     else 
-        SaveCoverArtForScreenSaver("", "")
+        SaveCoverArtForScreenSaver("file://pkg:/images/subsonic.png", "file://pkg:/images/subsonic.png")
         'use default image if current item has no cover art
     end if
 end function
