@@ -19,13 +19,7 @@ Sub RunScreenSaver()
         print "Main app not running. Exiting."
         return
     end if
-    ' If there is no cover art saved from the main application, then
-    ' defer to the default screensaver. Remove this if you want to
-    ' run the logo screensaver or something else at this point.
-    if (GetSavedCoverArtUrl() = "") then
-        print "No cover art available. Exiting."
-        return
-    end if
+    
     DisplayScreenSaver()
 End Sub
 
@@ -33,8 +27,8 @@ Sub DisplayScreenSaver()
     ' image "constants"
     m.border_hd    = {url:"pkg:/images/Art_Border_HD.png"              , SourceRect:{w:205,h:210} , TargetRect:{x:0,y:0,w:0,h:0}}
     m.border_sd43  = {url:"pkg:/images/Art_Border_SD43.png"            , SourceRect:{w:138,h:129} , TargetRect:{x:0,y:0,w:0,h:0}}
-    m.default_hd   = {url:"pkg:/images/Logo_Overhang_Roku_SDK_HD.png"   , SourceRect:{w:296,h:60}  , TargetRect:{x:0,y:0,w:0,h:0}}
-    m.default_sd43 = {url:"pkg:/images/Logo_Overhang_Roku_SDK_SD43.png" , SourceRect:{w:222,h:45}  , TargetRect:{x:0,y:0,w:0,h:0}}
+    m.default_hd   = {url:"pkg:/images/subsonic_overhang_HD.png"   , SourceRect:{w:296,h:60}  , TargetRect:{x:0,y:0,w:0,h:0}}
+    m.default_sd43 = {url:"pkg:/images/subsonic_overhang_SD43.png" , SourceRect:{w:222,h:45}  , TargetRect:{x:0,y:0,w:0,h:0}}
 
     m.default_image = CreateDefaultScreensaverImage()
     canvas = CreateScreensaverCanvas("#000000")
