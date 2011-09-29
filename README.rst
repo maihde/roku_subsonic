@@ -16,8 +16,8 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 Release Notes
 ~~~~~~~~~~~~~
 
-1.2.0 - Coming Soon
-'''''''''''''''''''
+1.2.0 - 28th Sep 2011
+'''''''''''''''''''''
 
  * Searches that return no results display a message instead of an empty results screen
  * Improved the functionality of "Test Connection" on settings screen
