@@ -27,6 +27,7 @@ ZIPREL = ../zips
 SOURCEREL = ..
 ZIP_EXCLUDE = \*.swp \*~ \*\.~ Makefile README.rst \*.git/\* \*.odp
 ROKU_DEV_TARGET = roku
+BUILDDATE = `date +%y%m%d`
 .PHONY: all $(APPNAME)
 
 $(APPNAME): 
@@ -70,7 +71,7 @@ pkg: install
 	@echo "*** Creating Package ***"
 
 	@echo "  >> updating build_version"
-	sed -i s/^build_version=.*/build_version=`date +%y%m%d`/ manifest
+	sed -i s/^build_version=.*/build_version=$(BUILDDATE)/ manifest
 
 	@echo "  >> creating destination directory $(PKGREL)"	
 	@if [ ! -d $(PKGREL) ]; \
@@ -85,7 +86,7 @@ pkg: install
 	fi
 
 	@echo "Packaging  $(APPNAME) on host $(ROKU_DEV_TARGET)"
-	@read -p "Password: " REPLY ; echo $$REPLY | xargs -i curl -s -S -Fmysubmit=Package -Fapp_name=$(APPNAME)/$(VERSION) -Fpasswd={} -Fpkg_time=`expr \`date +%s\` \* 1000` "http://$(ROKU_DEV_TARGET)/plugin_package" | grep '^<font face=' | sed 's/.*href=\"\([^\"]*\)\".*/\1/' | sed 's#pkgs/##' | xargs -i curl -s -S -o $(PKGREL)/$(APPNAME)_{} http://$(ROKU_DEV_TARGET)/pkgs/{}
+	@read -p "Password: " REPLY ; echo $$REPLY | xargs -i curl -s -S -Fmysubmit=Package -Fapp_name=$(APPNAME)/$(VERSION) -Fpasswd={} -Fpkg_time=`expr \`date +%s\` \* 1000` "http://$(ROKU_DEV_TARGET)/plugin_package" | grep '^<font face=' | sed 's/.*href=\"\([^\"]*\)\".*/\1/' | sed 's#pkgs/##' | xargs -i curl -s -S -o $(PKGREL)/$(APPNAME)_$(BUILDDATE)_{} http://$(ROKU_DEV_TARGET)/pkgs/{}
 
 	@echo "*** Package  $(APPNAME) complete ***" 
 remove:
