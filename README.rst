@@ -52,6 +52,8 @@ Credits
 Icons from Emre Ozcelik's "Elegant Blue Web" icon set
     http://www.iconfinder.com/search/?q=iconset%3Aellegant
 
+Various bug-fixes and enhancements from Mark Leone.
+
 Known Issues
 ------------
 1. Transcoded files play only a portion of the file; this is because when the roku
