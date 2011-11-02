@@ -83,23 +83,24 @@ Known Issues
 TODO
 ----
 
-Version 1.3
-~~~~~~~~~~~
+Version 1.3 - Goal Nov 30
+~~~~~~~~~~~~~~~~~~~~~~~~~
+#. If Subsonic API 1.6 is available, provide rating controls on springboard and use setRating API to update rating on Subsonic
 #. Add support to browse and play Subsonic playlists
 #. When in suffle mode, fetch more when there is only one song left such that the Next->Button always has a valid entry
-#. Add basic video support
+#. Check if roGridScreen and roAudioPlayer are compatible in firmware 3.0
+#. Check if Subsonic 4.6 and/or firmware 3.0 fixes transcoding content-length issue.  If not, provide a warning (only once)
+   the first time a user attempts to play a transcoded file.
 
-Version 1.4
-~~~~~~~~~~~
+Version 1.4 - Goal Jan 31
+~~~~~~~~~~~~~~~~~~~~~~~~~
+#. Subsonic Jukebox Control Mode
+#. Podcasts support
 #. Add ability to create playlist on the fly, similar to Subsonic webpage player, where albums/songs can be added to the playlist
 #. Reload the main-screen categories when re-entering it, but do so in the background so that the user-interface is snappy
+#. Attempt to optimize initial startup and loading of index browser
 
-Misc
-~~~~
-#. Provide warning the first time a transcoded file is loading, telling the user about issue #1
-#. Error checking when server is down
-#. Add comments for functions
-#. Access lyrics from springboard page
-#. Work with subsonic developers to resolve the transcoding bug
-#. If and when roGridScreen and roAudioPlayer are compatible support continuous playback of audio
-#. Add support to view the "getNowPlaying.view" information on the main screen
+Version 1.5
+~~~~~~~~~~~
+#. Add basic video support
+#. Add support to view the "getNowPlaying.view" information on the main grid screen
