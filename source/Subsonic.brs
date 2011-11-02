@@ -423,6 +423,7 @@ function ShowPlayQueue(items as Object, nowplaying=0 as Integer, style="flat-epi
     port=CreateObject("roMessagePort")
     screen.SetMessagePort(port)
 
+    screen.SetListDisplayMode("scale-to-fit")
     screen.SetContentList(items)
     screen.SetFocusedListItem(nowplaying)
 
@@ -732,7 +733,7 @@ end function
 
 
 REM ***************************************************************
-REM
+REM Called to populate the initial roGridScreen.
 REM ***************************************************************
 function getAlbumList(listtype as String) as object
     albumList = []
@@ -744,7 +745,7 @@ function getAlbumList(listtype as String) as object
     
     if xml.Parse(xferResult)
        for each album in xml.albumList.album
-           item = CreateAlbumItemFromXml(album)
+           item = CreateAlbumItemFromXml(album, 96, 132)
            if item <> invalid then
                albumList.push(item)
            end if
@@ -798,7 +799,7 @@ function GetAlbumSongs(album as Object)
     items = [] 
     if xml.Parse(xferResult)
         for each child in xml.directory.child
-            item = CreateSongItemFromXml(child)
+            item = CreateSongItemFromXml(child, 158, 237)
             if item <> invalid then
                 items.push(item)
             end if
@@ -857,7 +858,7 @@ function GetRandomSongs(count=20 as Integer) as Object
     items = [] 
     if xml.Parse(xferResult)
         for each song in xml.randomSongs.song
-            item = CreateSongItemFromXml(song)
+            item = CreateSongItemFromXml(song, 158, 237)
             if item <> invalid then
                 items.push(item)
             end if
@@ -944,7 +945,7 @@ function ShowArtist(artist as Object)
 
     if xml.Parse(xferResult)
        for each child in xml.directory.child
-           item = CreateAlbumItemFromXml(child)
+           item = CreateAlbumItemFromXml(child, 158, 237)
            if item <> invalid then
                albumList.push(item)
            end if
@@ -955,7 +956,7 @@ function ShowArtist(artist as Object)
     screen = CreateObject("roPosterScreen")
     screen.SetMessagePort(port)
     screen.SetListStyle("flat-category")
-    screen.SetListDisplayMode("best-fit")
+    screen.SetListDisplayMode("scale-to-fit")
     screen.SetBreadcrumbText(artist.Title, "")
     screen.SetBreadcrumbEnabled(true)
     screen.SetContentList(albumList)
@@ -1051,13 +1052,13 @@ function DoSearch() as Dynamic
                end if
            next
            for each album in xml.searchResult2.album
-               item = CreateAlbumItemFromXml(album)
+               item = CreateAlbumItemFromXml(album, 96, 132)
                if item <> invalid then
                    results.albums.push(item)
                end if
            next
            for each song in xml.searchResult2.song
-                item = CreateSongItemFromXml(song)
+                item = CreateSongItemFromXml(song, 96, 132)
                 if item <> invalid then
                     results.songs.push(item)
                 end if
@@ -1527,7 +1528,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function CreateAlbumItemFromXml(album as Object) as Dynamic
+function CreateAlbumItemFromXml(album as Object, SDPosterSize as Integer, HDPosterSize as Integer) as Dynamic
     if album@isDir = "false" then
         return invalid
     end if
@@ -1541,8 +1542,9 @@ function CreateAlbumItemFromXml(album as Object) as Dynamic
     item.ShortDescriptionLine2 = album@artist
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: album@id})
     if album@coverArt <> invalid then
-        item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
-        item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt})
+        item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(SDPosterSize), 2)})
+        item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(HDPosterSize), 2)})
+        print "HDPosterUrl"; item.HDPosterUrl
     endif
     return item
 end function
@@ -1550,7 +1552,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function CreateSongItemFromXml(song as Object) as Dynamic
+function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPosterSize as Integer) as Dynamic
     if song@isDir = "true" then
         return invalid
     end if
@@ -1587,8 +1589,8 @@ function CreateSongItemFromXml(song as Object) as Dynamic
     end if
 
     if song@coverArt <> invalid then
-       item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt})
-       item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt})
+       item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(SDPosterSize), 2)})
+       item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(HDPosterSize), 2)})
     endif
 
     return item

@@ -16,6 +16,12 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 Release Notes
 ~~~~~~~~~~~~~
 
+1.3.0 - COMING SOON
+'''''''''''''''''''''
+
+ * Request properly scaled images from the Subsonic server to avoid slow response when
+   viewing folders (artists) with a large number of albums
+
 1.2.0 - 28th Sep 2011
 '''''''''''''''''''''
 
