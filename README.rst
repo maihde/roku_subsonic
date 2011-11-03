@@ -70,6 +70,8 @@ Known Issues
 
    http://www.activeobjects.no/subsonic/forum/viewtopic.php?p=26893#26893 
 
+   UPDATE - Subsonic 4.6.beta1 appears to have resolved this issue
+
 2. roGridScreen doesn't cooperate with roAudioPlayer running in the background.
    If the roAudioPlayer sends an event while the grid screen is visible, the 
    album artwork get's scaled funny; this odd GridScreen behavior is in addition
