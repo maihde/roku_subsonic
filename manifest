@@ -7,5 +7,5 @@ mm_icon_side_hd=pkg:/images/subsonic.png
 mm_icon_focus_sd=pkg:/images/subsonic.png
 mm_icon_side_sd=pkg:/images/subsonic.png
 major_version=1
-minor_version=2
+minor_version=3
 build_version=110928
