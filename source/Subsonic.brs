@@ -152,7 +152,7 @@ function CreateConfigurationScreen(port as Object) as Object
 
     screen.AddParagraph("Software Information") 
     screen.AddParagraph(" Version: " + getSoftwareVersion().version)
-    screen.AddParagraph(" Minimum Required Server Version: " + getApiVersion())
+    screen.AddParagraph(" Server API Version: " + getApiVersion())
     
 
     screensaverMode = getScreensaverMode()
@@ -248,6 +248,47 @@ function ShowConfigurationScreen()
             screen = newScreen
         else
             screen.Close()
+        end if
+    end while
+end function
+
+REM ******************************************************
+REM
+REM ******************************************************
+function ShowAlbumInfoDialog(album as Object)
+    port = CreateObject("roMessagePort")
+    screen = CreateObject("roMessageDialog")
+    screen.SetMessagePort(port)
+    screen.EnableOverlay(true)
+    screen.SetMenuTopLeft(true)
+    screen.SetTitle("Change Rating")
+    screen.SetText(album.title + " by " + album.artist)
+    
+    screen.AddRatingButton(1, album.UserStarRating, album.StarRating, "album rating") ' this doesn't seem to trigger a msg event no matter what we do
+    screen.AddButton(2, "Ok")
+
+    screen.EnableBackButton(true)
+    screen.Show()
+    
+    while true
+        msg = wait(0, port)
+        if msg <> invalid then
+            print type(msg); " "; msg.getIndex(); " "; msg.getData()
+        end if
+        if type(msg) = "roMessageDialogEvent" then
+            if msg.isScreenClosed() then
+                exit while
+            else if msg.isButtonInfo() then   ' Info pressed again, dismiss the info overlay
+                exit while
+            else if msg.isButtonPressed() then
+                if msg.getIndex() = 1 then
+                   print "Updating Rating"
+                   rating = msg.getData()
+                   SetRating(album.id, rating)
+                else
+                    exit while
+                end if
+            end if
         end if
     end while
 end function
@@ -379,6 +420,7 @@ function ShowMainScreen() as Object
 
     item = invalid
     focusedRow = invalid
+    focusedCol = invalid
     while true
         print "Waiting for message"
         msg = wait(20000, port)
@@ -388,6 +430,11 @@ function ShowMainScreen() as Object
             print "msg= "; msg.GetMessage() " , index= "; msg.GetIndex(); " data= "; msg.getData()
             if msg.isListItemFocused() then
                 focusedRow = msg.GetIndex()
+                focusedCol = msg.GetData()
+            else if msg.isRemoteKeyPressed() then
+                if msg.GetIndex() = 10 ' the info button is pressed
+                    ShowAlbumInfoDialog(categoryList[focusedRow].Items[focusedCol])
+                end if
             else if msg.isListItemSelected() then
                 row = msg.GetIndex()
                 selection = msg.getData()
@@ -588,7 +635,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.SetContent(player.items[index])
     screen.SetDescriptionStyle("audio")
     screen.SetTitle(player.items[index].Title)
-    screen.SetStaticRatingEnabled(false)
+    
     screen.ClearButtons()
     if paused then
         screen.AddButton(1, "Play")
@@ -604,6 +651,11 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.AddButton(4, "Show Queue")
     screen.AllowNavLeft(true)
     screen.AllowNavRight(true)
+    
+    if compareVersions(getApiVersion(), "1.5.0") >= 0 then
+        screen.AddRatingButton(5, player.items[index].UserStarRating, player.items[index].StarRating)
+    end if
+    screen.SetStaticRatingEnabled(false)
     
     if player.GetCurrent().length <> invalid then 
         screen.SetProgressIndicatorEnabled(true)
@@ -659,6 +711,10 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                         player.f_Goto(i)
                         screen.SetContent(player.GetCurrent())
                     end if
+                else if msg.getIndex() = 5 then
+                    rating = msg.getData()
+                    setRating(player.GetCurrent().Id, rating)
+                    player.items[index].UserStarRating = rating
                 end if
             else if msg.isRemoteKeyPressed() then
                 i = msg.getIndex()
@@ -726,6 +782,9 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                 screen.AddButton(3, "Next - " + player.GetNext().Title)
             end if
             screen.AddButton(4, "Show Queue")
+            if compareVersions(getApiVersion(), "1.5.0") >= 0 then
+                screen.AddRatingButton(5, player.items[index].UserStarRating, player.items[index].StarRating)
+            end if
             screen.AllowUpdates(true)
         end if
     end while
@@ -753,6 +812,19 @@ function getAlbumList(listtype as String) as object
     end if
 
     return albumList
+end function
+
+REM ***************************************************************
+REM 
+REM ***************************************************************
+function setRating(itemId as String, rating as Integer) as object
+    print "Setting rating "; itemId; " "; rating
+    subsonicRating = stri(int(rating / 20)) ' roku use 0-100, subsonic using 0-5; trim the whitespace that roku puts on stri
+    subsonicRating = mid(subsonicRating, 2)
+    
+    xfer = CreateObject("roURLTransfer")
+    xfer.SetURL(createSubsonicUrl("setRating.view", {id: itemId, rating: subsonicRating}))
+    xferResult = xfer.GetToString()
 end function
 
 REM ***************************************************************
@@ -795,7 +867,7 @@ function GetAlbumSongs(album as Object)
     xfer.SetURL(createSubsonicUrl("getMusicDirectory.view", {id: album.Id}))
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
-   
+
     items = [] 
     if xml.Parse(xferResult)
         for each child in xml.directory.child
@@ -853,7 +925,7 @@ function GetRandomSongs(count=20 as Integer) as Object
     xfer = CreateObject("roURLTransfer")
     xfer.SetURL(createSubsonicUrl("getRandomSongs.view", {size: Stri(count).Trim()}))
     xferResult = xfer.GetToString()
-    print xferResult
+    
     xml = CreateObject("roXMLElement")
     items = [] 
     if xml.Parse(xferResult)
@@ -971,6 +1043,8 @@ function ShowArtist(artist as Object)
             if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
                 PlayAlbum(albumList[msg.GetIndex()])
+            else if msg.isListItemInfo() then
+                ShowAlbumInfoDialog(albumList[msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             end if
@@ -1176,7 +1250,8 @@ REM ***************************************************************
 function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false as Boolean) as Boolean
     alive = false
     error = invalid
-
+    m.serverApiVersion = invalid
+    
     url = createSubsonicUrl("ping.view")
     xferResult = UrlTransferWithBusyDialog(url, "Connecting")
     if xferResult.code = 200 then
@@ -1187,10 +1262,13 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
             if xml.GetName() = "subsonic-response" then
                if xml.GetAttributes().Lookup("status") = "ok" then
                    alive = true
+                   if xml.GetAttributes().Lookup("version") <> invalid  then
+                        m.serverApiVersion = xml.GetAttributes().Lookup("version")
+                   end if
                else if xml.error <> invalid then
                    if xml.GetAttributes().Lookup("version") <> invalid  then
                         sVersion = xml.GetAttributes().Lookup("version")
-                        cVersion = getApiVersion()
+                        cVersion = getMinimumApiVersion()
                         error = getVersionErrMsg(cVersion, sVersion)
                         if error <> "OK" then
                             alive = false
@@ -1221,6 +1299,43 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
+function compareVersions(aVersion as String, bVersion as String) as Integer
+    aParts   = aVersion.Tokenize(".")
+    aMajor   = aParts[0]
+    aMinor   = aParts[1]
+    aRelease = aParts[2]
+    bParts   = bVersion.Tokenize(".")
+    bMajor   = bParts[0]
+    bMinor   = bParts[1]
+    bRelease = aParts[3]
+    
+    if (aMajor = bMajor) then
+        if (aMinor = bMinor) then
+            if (aRelease = bRelease) then
+                return 0
+            else if (aRelease > bRelease) then
+                return 1
+            else if (aRelease < bRelease) then
+                return -1
+            end if
+        else if (aMinor > bMinor) then
+            return 1
+        else if (aMinor < bMinor) then
+            return -1
+        end if
+    else if (aMajor > bMajor) then
+        return 1
+    else if (aMajor < bMajor) then
+        return -1
+    end if
+    
+    print "Internal error"
+    return 0 ' this should never occur  
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************    
 function getVersionErrMsg(cVersion as String, sVersion as String) as String
     cvParts = cVersion.Tokenize(".")
     cMajor = cvParts[0]
@@ -1229,11 +1344,13 @@ function getVersionErrMsg(cVersion as String, sVersion as String) as String
     sMajor = svParts[0]
     sMinor = svParts[1]
     compatible = true
+    
     if cMajor <> sMajor then
         compatible = false
     else if Val(sMinor) < val(cMinor) then
         compatible = false
     end if
+    
     if compatible = true then
         return "OK"
     else 
@@ -1299,6 +1416,17 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function getApiVersion() as String
+  if m.serverApiVersion <> invalid then
+      return m.serverApiVersion
+  else
+      return getMinimumApiVersion()
+  end if
+End function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function getMinimumApiVersion() as String
   return "1.4.0"
 End function
 
@@ -1541,10 +1669,19 @@ function CreateAlbumItemFromXml(album as Object, SDPosterSize as Integer, HDPost
     item.ShortDescriptionLine1 = album@title
     item.ShortDescriptionLine2 = album@artist
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: album@id})
+    item.StarRating = 0
+    item.UserStarRating = 0
+    
+    if album@averageRating <> invalid then
+        item.StarRating = int(val(album@averageRating) * 20) ' scale 0-5 to 0-100 per roku specs
+    end if
+    if album@userRating <> invalid then
+        item.UserStarRating = int(val(album@userRating) * 20)
+    end if
+    
     if album@coverArt <> invalid then
         item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(SDPosterSize), 2)})
         item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(HDPosterSize), 2)})
-        print "HDPosterUrl"; item.HDPosterUrl
     endif
     return item
 end function
@@ -1575,7 +1712,16 @@ function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPoster
 
     item.ContentType = "audio"
     item.StreamFormat = invalid
-
+    item.StarRating = 0
+    item.UserStarRating = 0
+    
+    if song@averageRating <> invalid then
+        item.StarRating = int(val(song@averageRating) * 20) ' scale 0-5 to 0-100 per roku specs
+    end if
+    if song@userRating <> invalid then
+        item.UserStarRating = int(val(song@userRating) * 20)
+    end if
+    
     ' According to the Component Reference, roAudioPlayer only supports
     ' WMA or MP3
     if song@contentType = "audio/mpeg" then
