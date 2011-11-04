@@ -55,17 +55,26 @@ Sub Main()
 
     facade.ShowMessage("")
     
+    ' Create the global play-queue
+    m.songs = []
+    m.nowplaying = 0
+    
     REM un-comment for screensaver dev testing. Screensaver will run immediately and endlessly with test image, and app will not run
     'SaveCoverArtForScreenSaver("file://pkg:/images/subsonic.png", "file://pkg:/images/subsonic.png")
     'RunScreenSaver()
     
     ' Show the main screen
     while true
-       item = ShowMainScreen()
+       selection = ShowMainScreen()
+       item = selection.item
        if item = invalid then
            exit while
        else if item.Type = "album" then
-           PlayAlbum(item)
+           if selection.action = "play" then
+               PlayAlbum(item)
+           else if selection.action = "info" then
+               ShowAlbumInfoScreen(item)
+           end if
        else if item.Type = "button" then
            if item.id = "settings" then
                ShowConfigurationScreen()
@@ -75,6 +84,12 @@ Sub Main()
                PlayRandom()
            else if item.id = "index" then
                ShowIndex()
+           else if item.id = "queue" then
+               i = ShowPlayQueue(m.songs, m.nowplaying)
+               if (i >= 0) then
+                   m.nowplaying = i
+                   ShowSpringBoard(m.songs, m.nowplaying)
+               end if
            else if item.id = "search" then
                selected_item = DoSearch()
                if selected_item <> invalid then
@@ -255,34 +270,47 @@ end function
 REM ******************************************************
 REM
 REM ******************************************************
-function ShowAlbumInfoDialog(album as Object)
+function ShowAlbumInfoScreen(album as Object)
     port = CreateObject("roMessagePort")
-    screen = CreateObject("roMessageDialog")
+    screen = CreateObject("roSpringBoardScreen")
     screen.SetMessagePort(port)
-    screen.EnableOverlay(true)
-    screen.SetMenuTopLeft(true)
-    screen.SetTitle("Change Rating")
-    screen.SetText(album.title + " by " + album.artist)
     
-    screen.AddRatingButton(1, album.UserStarRating, album.StarRating, "album rating") ' this doesn't seem to trigger a msg event no matter what we do
-    screen.AddButton(2, "Ok")
-
-    screen.EnableBackButton(true)
+    screen.SetContent(album)
+    screen.SetDescriptionStyle("audio")
+    screen.SetTitle(album.Title)
+    screen.SetPosterStyle("rounded-square-generic")
+    
+    screen.ClearButtons()
+    screen.AddButton(1, "Play All")
+    screen.AddButton(2, "Add All")
+    if compareVersions(getApiVersion(), "1.5.0") >= 0 then
+        screen.AddRatingButton(3, album.UserStarRating, album.StarRating)
+    end if
+    screen.SetStaticRatingEnabled(false)
     screen.Show()
-    
+     
     while true
         msg = wait(0, port)
         if msg <> invalid then
             print type(msg); " "; msg.getIndex(); " "; msg.getData()
         end if
-        if type(msg) = "roMessageDialogEvent" then
+        if type(msg) = "roSpringboardScreenEvent" then
             if msg.isScreenClosed() then
                 exit while
             else if msg.isButtonInfo() then   ' Info pressed again, dismiss the info overlay
                 exit while
             else if msg.isButtonPressed() then
                 if msg.getIndex() = 1 then
-                   print "Updating Rating"
+                   facade = CreateObject("roPosterScreen")
+                   facade.Show()
+                   screen.Close()
+                   PlayAlbum(album)
+                   facade.Close()
+                   exit while
+                else if msg.getIndex() = 2 then
+                   AddAlbum(album)
+                   exit while
+                else if msg.getIndex() = 3 then
                    rating = msg.getData()
                    SetRating(album.id, rating)
                 else
@@ -421,6 +449,7 @@ function ShowMainScreen() as Object
     item = invalid
     focusedRow = invalid
     focusedCol = invalid
+    result = {action: invalid, item: invalid}
     while true
         print "Waiting for message"
         msg = wait(20000, port)
@@ -433,17 +462,22 @@ function ShowMainScreen() as Object
                 focusedCol = msg.GetData()
             else if msg.isRemoteKeyPressed() then
                 if msg.GetIndex() = 10 ' the info button is pressed
-                    ShowAlbumInfoDialog(categoryList[focusedRow].Items[focusedCol])
+                    result.action = "info"
+                    result.item =  categoryList[focusedRow].Items[focusedCol]
+                    Exit while
                 end if
             else if msg.isListItemSelected() then
                 row = msg.GetIndex()
                 selection = msg.getData()
                 info = msg.getInfo()
                 print "list item selected row= "; row; " selection= "; selection
-                item = categoryList[row].Items[selection]
+                result.action = "play"
+                result.item = categoryList[row].Items[selection]
                 Exit while
             else if msg.isScreenClosed() then
                 print "Main screen closed"
+                result.action = invalid
+                result.item = invalid
                 Exit while
             end if
         else
@@ -457,23 +491,30 @@ function ShowMainScreen() as Object
         end if
     end while
     screen.Close()
-    return item
+    
+    return result
 
 end function
 
 REM ***************************************************************
 REM
 REM ***************************************************************
-function ShowPlayQueue(items as Object, nowplaying=0 as Integer, style="flat-episodic" as String)
+function ShowPlayQueue(items as Object, nowplaying=0 as Integer, style="flat-category" as String)
     screen = CreateObject("roPosterScreen")
     screen.SetListStyle(style)
     port=CreateObject("roMessagePort")
     screen.SetMessagePort(port)
 
-    screen.SetListDisplayMode("scale-to-fit")
-    screen.SetContentList(items)
-    screen.SetFocusedListItem(nowplaying)
 
+    screen.SetListDisplayMode("scale-to-fit")
+    
+    if items.Count() = 0 then
+        screen.ShowMessage("The play queue is empty")
+    else 
+        screen.SetContentList(items)
+        screen.SetFocusedListItem(nowplaying)
+    end if
+    
     screen.Show()
 
     while true
@@ -706,7 +747,7 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                     player.GotoNext()
                     screen.SetContent(player.GetCurrent())
                 else if msg.getIndex() = 4 then
-                    i = ShowPlayQueue(items, index, options.playQueueStyle)
+                    i = ShowPlayQueue(items, index)
                     if (i >= 0) and (i <> player.index) then
                         player.f_Goto(i)
                         screen.SetContent(player.GetCurrent())
@@ -758,7 +799,8 @@ REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
                     else
                         exit while ' return to the home screen
                     end if
-                else if msg.getMessage() = "start of play"
+                else if msg.getMessage() = "start of play" then
+                    m.nowplaying = player.index
                     setScreenSaverCoverArtUrl(player.items[player.index])
                     player.timer.Mark()
                 end if
@@ -831,16 +873,26 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function PlaySong(song as Object)
-    songs = [ song ]
-    ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+    m.songs = [ song ]
+    m.nowplaying = 0
+    ShowSpringBoard(m.songs, m.nowplaying)
 end function
 
 REM ***************************************************************
 REM
 REM ***************************************************************
 function PlayAlbum(album as Object)
-    songs = GetAlbumSongs(album)
-    ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+    m.songs = GetAlbumSongs(album)
+    m.nowplaying = 0
+    ShowSpringBoard(m.songs, m.nowplaying)
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function AddAlbum(album as Object)
+    album_songs = GetAlbumSongs(album)
+    m.songs.Append(album_songs)
 end function
 
 REM ***************************************************************
@@ -852,11 +904,12 @@ function PlayRandom()
     screen.ShowBusyAnimation()
     screen.Show()
 
-    items = GetRandomSongs()
+    m.songs = GetRandomSongs()
+    m.nowplaying = 0
     options = {fetchMore: GetRandomSongs
               playQueueStyle: "flat-category"
              }
-    ShowSpringBoard(items, 0, options)            
+    ShowSpringBoard(m.songs, m.nowplaying, options)            
 end function
 
 REM ***************************************************************
@@ -906,6 +959,13 @@ function getMainMenu() as object
               Description: "Shuffle all songs"
               SDPosterUrl: "pkg:/images/buttons/shuffle.png"
               HDPosterUrl: "pkg:/images/buttons/shuffle.png"
+            }
+            { Type: "button"
+              id: "queue"
+              Title: "Play Queue"
+              Description: "Show current play queue"
+              SDPosterUrl: "pkg:/images/buttons/playing.png"
+              HDPosterUrl: "pkg:/images/buttons/playing.png"
             }
             { Type: "button"
               id: "settings"
@@ -1044,7 +1104,7 @@ function ShowArtist(artist as Object)
                 print "list selected: " + Stri(msg.GetIndex())
                 PlayAlbum(albumList[msg.GetIndex()])
             else if msg.isListItemInfo() then
-                ShowAlbumInfoDialog(albumList[msg.GetIndex()])
+                ShowAlbumInfoScreen(albumList[msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             end if
