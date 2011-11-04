@@ -461,8 +461,8 @@ function ShowMainScreen() as Object
                 focusedRow = msg.GetIndex()
                 focusedCol = msg.GetData()
             else if msg.isRemoteKeyPressed() then
-                if msg.GetIndex() = 10 ' the info button is pressed
-                    result.action = "info"
+                if msg.GetIndex() = 13 ' the play button is pressed
+                    result.action = "play"
                     result.item =  categoryList[focusedRow].Items[focusedCol]
                     Exit while
                 end if
@@ -471,7 +471,7 @@ function ShowMainScreen() as Object
                 selection = msg.getData()
                 info = msg.getInfo()
                 print "list item selected row= "; row; " selection= "; selection
-                result.action = "play"
+                result.action = "info"
                 result.item = categoryList[row].Items[selection]
                 Exit while
             else if msg.isScreenClosed() then
@@ -943,36 +943,36 @@ function getMainMenu() as object
               id: "index"
               Title: "All Music"
               Description: "Browse all music"
-              SDPosterUrl: "pkg:/images/buttons/index.png"
-              HDPosterUrl: "pkg:/images/buttons/index.png"
+              SDPosterUrl: "pkg:/images/buttons/index.jpg"
+              HDPosterUrl: "pkg:/images/buttons/index.jpg"
             }
             { Type: "button"
               id: "search"
               Title: "Search"
               Description: "Search subsonic"
-              SDPosterUrl: "pkg:/images/buttons/search.png"
-              HDPosterUrl: "pkg:/images/buttons/search.png"
+              SDPosterUrl: "pkg:/images/buttons/search.jpg"
+              HDPosterUrl: "pkg:/images/buttons/search.jpg"
             }
             { Type: "button"
               id: "shuffle"
               Title: "Shuffle All"
               Description: "Shuffle all songs"
-              SDPosterUrl: "pkg:/images/buttons/shuffle.png"
-              HDPosterUrl: "pkg:/images/buttons/shuffle.png"
+              SDPosterUrl: "pkg:/images/buttons/shuffle.jpg"
+              HDPosterUrl: "pkg:/images/buttons/shuffle.jpg"
             }
             { Type: "button"
               id: "queue"
               Title: "Play Queue"
               Description: "Show current play queue"
-              SDPosterUrl: "pkg:/images/buttons/playing.png"
-              HDPosterUrl: "pkg:/images/buttons/playing.png"
+              SDPosterUrl: "pkg:/images/buttons/playing.jpg"
+              HDPosterUrl: "pkg:/images/buttons/playing.jpg"
             }
             { Type: "button"
               id: "settings"
               Title: "Settings"
               Description: "Subsonic settings"
-              SDPosterUrl: "pkg:/images/buttons/settings.png"
-              HDPosterUrl: "pkg:/images/buttons/settings.png"
+              SDPosterUrl: "pkg:/images/buttons/settings.jpg"
+              HDPosterUrl: "pkg:/images/buttons/settings.jpg"
             }
        ]
        return buttons
@@ -1095,6 +1095,7 @@ function ShowArtist(artist as Object)
 
     screen.Show()
 
+    index = invalid
     while true
         msg = wait(0, port)
         print "posterscreen get selection typemsg = "; type(msg)
@@ -1102,9 +1103,15 @@ function ShowArtist(artist as Object)
         if type(msg) = "roPosterScreenEvent" then
             if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                PlayAlbum(albumList[msg.GetIndex()])
-            else if msg.isListItemInfo() then
                 ShowAlbumInfoScreen(albumList[msg.GetIndex()])
+            else if msg.isListItemFocused() then
+                index = msg.GetIndex()
+            else if msg.isRemoteKeyPressed() then
+                if msg.GetIndex() = 13 ' the play button is pressed
+                    PlayAlbum(albumList[index])
+                end if
+            'else if msg.isListItemInfo() then
+                
             else if msg.isScreenClosed() then 
                 exit while
             end if
@@ -1708,8 +1715,8 @@ function CreateArtistItemFromXml(artist as Object) as Dynamic
     item.Title = artist@name
     item.ShortDescriptionLine1 = artist@name 
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: artist@id})
-    item.SDPosterUrl = "pkg:/images/buttons/artist.png"
-    item.HDPosterUrl = "pkg:/images/buttons/artist.png"
+    item.SDPosterUrl = "pkg:/images/buttons/artist.jpg"
+    item.HDPosterUrl = "pkg:/images/buttons/artist.jpg"
     return item
 end function
 
