@@ -7,7 +7,7 @@ provides the following features:
  * Full catalog shuffle playback
  * Quick browse of Subsonic album lists (Random, Recent, Top Rated, etc.)
 
-Tested on Roku firmware version 2.9.
+Tested on Roku firmware version: 2.9 and 3.0
 
 Please provide feedback: https://github.com/inbox/new/maihde
 
@@ -15,6 +15,12 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 
 Release Notes
 ~~~~~~~~~~~~~
+
+1.3.0 - 19th Nov 2011
+'''''''''''''''''''''
+ * Request properly scaled images from the Subsonic server to avoid slow response when
+   viewing folders (artists) with a large number of albums
+ * Change browse icon to prepare for 1.4.0 support for "Now Playing" icon
 
 1.2.0 - 28th Sep 2011
 '''''''''''''''''''''
@@ -54,13 +60,11 @@ Icons from Emre Ozcelik's "Elegant Blue Web" icon set
 
 Known Issues
 ------------
-1. Transcoded files play only a portion of the file; this is because when the roku
-   does not receive a content-length response, it will use partial transfer requests
-   and it expects a 416 response code to indicate that the partial request has 
-   reached the end of the file.  Subsonic does not send a 416 response code,
-   causing the roku to abort playback.  See this link for the patch information:
+1. With Subsonic 4.5 and earlier, transcoded files play only a portion of the file.
+   Subsonic 4.6.beta1 has fixes that resolve this issue. See this link for a patch 
+   of 4.4 and 4.5:
 
-   http://www.activeobjects.no/subsonic/forum/viewtopic.php?p=26893#26893 
+   http://www.activeobjects.no/subsonic/forum/viewtopic.php?p=26893#26893
 
 2. roGridScreen doesn't cooperate with roAudioPlayer running in the background.
    If the roAudioPlayer sends an event while the grid screen is visible, the 
@@ -72,22 +76,22 @@ Known Issues
 
 4. Music must be organized in Artist/Album/Songs directory structure.
 
+5. On roku firmware version 3.0, button clicks will cause gaps in audio playback.
+   Turn Sound-Effects to "Off" if this is bothersome.
+
 TODO
 ----
 
-Version 1.3
-~~~~~~~~~~~
-#. Add support to browse and play Subsonic playlists
-#. When in suffle mode, fetch more when there is only one song left such that the Next->Button always has a valid entry
-#. Add basic video support
-
 Version 1.4
 ~~~~~~~~~~~
+#. When in suffle mode, fetch more when there is only one song left such that the Next->Button always has a valid entry
+#. Add support to browse and play Subsonic playlists
 #. Add ability to create playlist on the fly, similar to Subsonic webpage player, where albums/songs can be added to the playlist
 #. Reload the main-screen categories when re-entering it, but do so in the background so that the user-interface is snappy
 
 Misc
 ~~~~
+#. Add basic video support
 #. Provide warning the first time a transcoded file is loading, telling the user about issue #1
 #. Error checking when server is down
 #. Add comments for functions
