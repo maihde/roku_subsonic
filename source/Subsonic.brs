@@ -75,6 +75,8 @@ Sub Main()
                PlayRandom()
            else if item.id = "index" then
                ShowIndex()
+           else if item.id = "playlist" then
+               ShowPlaylists()
            else if item.id = "search" then
                selected_item = DoSearch()
                if selected_item <> invalid then
@@ -767,7 +769,25 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function PlayAlbum(album as Object)
+    screen = CreateObject("roOneLineDialog")
+    screen.SetTitle("Retrieving...")
+    screen.ShowBusyAnimation()
+    screen.Show()
+    
     songs = GetAlbumSongs(album)
+    ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function PlayPlaylist(playlist as Object)
+    screen = CreateObject("roOneLineDialog")
+    screen.SetTitle("Retrieving...")
+    screen.ShowBusyAnimation()
+    screen.Show()
+    
+    songs = GetPlaylistSongs(playlist)    
     ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
 end function
 
@@ -812,6 +832,28 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
+function GetPlaylistSongs(playlist as Object)
+    xfer = CreateObject("roURLTransfer")
+    xfer.SetURL(createSubsonicUrl("getPlaylist.view", {id: playlist.Id}))
+    xferResult = xfer.GetToString()
+    xml = CreateObject("roXMLElement")
+   
+    items = [] 
+    if xml.Parse(xferResult)
+        for each entry in xml.playlist.entry
+            item = CreateSongItemFromXml(entry, 158, 237)
+            if item <> invalid then
+                items.push(item)
+            end if
+        next
+    end if
+
+    return items
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
 function getMainMenu() as object
         buttons = [
             { Type: "button"
@@ -820,6 +862,13 @@ function getMainMenu() as object
               Description: "Browse all music"
               SDPosterUrl: "pkg:/images/buttons/index.png"
               HDPosterUrl: "pkg:/images/buttons/index.png"
+            }
+            { Type: "button"
+              id: "playlist"
+              Title: "Playlists"
+              Description: "Browse playlists"
+              SDPosterUrl: "pkg:/images/buttons/playlist.jpg"
+              HDPosterUrl: "pkg:/images/buttons/playlist.jpg"
             }
             { Type: "button"
               id: "search"
@@ -970,6 +1019,55 @@ function ShowArtist(artist as Object)
             if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
                 PlayAlbum(albumList[msg.GetIndex()])
+            else if msg.isScreenClosed() then 
+                exit while
+            end if
+        endif
+    end while           
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function ShowPlaylists()
+    playlists = CreateObject("roArray", 0, true)
+
+    xfer = CreateObject("roURLTransfer")
+    xfer.SetURL(createSubsonicUrl("getPlaylists.view", {}))
+    xferResult = xfer.GetToString()
+    xml = CreateObject("roXMLElement")
+
+    if xml.Parse(xferResult)
+       for each playlist in xml.playlists.playlist
+           item = CreatePlaylistItemFromXml(playlist, 158, 237)
+           if item <> invalid then
+               playlists.push(item)
+           end if
+       next
+    end if
+    
+    port = CreateObject("roMessagePort")
+    screen = CreateObject("roPosterScreen")
+    screen.SetMessagePort(port)
+    screen.SetListStyle("flat-category")
+    screen.SetListDisplayMode("scale-to-fit")
+    
+    if playlists.Count() = 0 then
+        screen.ShowMessage("No playlists are available")
+    else
+        screen.SetContentList(playlists)
+    end if
+    
+    screen.Show()
+
+    while true
+        msg = wait(0, port)
+        print "posterscreen get selection typemsg = "; type(msg)
+
+        if type(msg) = "roPosterScreenEvent" then
+            if msg.isListItemSelected() then
+                print "list selected: " + Stri(msg.GetIndex())
+                PlayPlaylist(playlists[msg.GetIndex()])
             else if msg.isScreenClosed() then 
                 exit while
             end if
@@ -1611,6 +1709,22 @@ function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPoster
        item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(HDPosterSize), 2)})
     endif
 
+    return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function CreatePlaylistItemFromXml(playlist as Object, SDPosterSize as Integer, HDPosterSize as Integer) as Dynamic
+    item = CreateObject("roAssociativeArray")
+    item.Id = playlist@id
+    item.Type = "playlist"
+    item.Title = playlist@name
+    item.ShortDescriptionLine1 = playlist@name
+    item.ShortDescriptionLine2 = ""
+    item.Url = createSubsonicUrl("gePlaylist.view", {id: playlist@id})
+    item.SDPosterUrl = "pkg:/images/buttons/playlist.jpg"
+    item.HDPosterUrl = "pkg:/images/buttons/playlist.jpg"
     return item
 end function
 
