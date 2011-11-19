@@ -1658,6 +1658,16 @@ function CreateAlbumItemFromXml(album as Object, SDPosterSize as Integer, HDPost
     item.ShortDescriptionLine1 = album@title
     item.ShortDescriptionLine2 = album@artist
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: album@id})
+    item.StarRating = 0
+    item.UserStarRating = 0
+
+    if album@averageRating <> invalid then
+        item.StarRating = int(val(album@averageRating) * 20) ' scale 0-5 to 0-100 per roku specs
+    end if
+    if album@userRating <> invalid then
+        item.UserStarRating = int(val(album@userRating) * 20)
+    end if
+    
     if album@coverArt <> invalid then
         item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(SDPosterSize), 2)})
         item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(HDPosterSize), 2)})
@@ -1691,6 +1701,16 @@ function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPoster
 
     item.ContentType = "audio"
     item.StreamFormat = invalid
+
+    item.StarRating = 0
+    item.UserStarRating = 0
+
+    if song@averageRating <> invalid then
+        item.StarRating = int(val(song@averageRating) * 20) ' scale 0-5 to 0-100 per roku specs
+    end if
+    if song@userRating <> invalid then
+        item.UserStarRating = int(val(song@userRating) * 20)
+    end if
 
     ' According to the Component Reference, roAudioPlayer only supports
     ' WMA or MP3
