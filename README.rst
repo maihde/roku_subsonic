@@ -21,6 +21,7 @@ Release Notes
  * Request properly scaled images from the Subsonic server to avoid slow response when
    viewing folders (artists) with a large number of albums
  * Change browse icon to prepare for 1.4.0 support for "Now Playing" icon
+ * Fix bug when setting username/password
 
 1.2.0 - 28th Sep 2011
 '''''''''''''''''''''

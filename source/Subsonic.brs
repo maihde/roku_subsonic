@@ -1418,7 +1418,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function setUsername(username as String) as String
+function setUsername(username as String)
     sec = CreateObject("roRegistrySection", "Settings")
     sec.Write("username", username)
     sec.Flush()
@@ -1439,7 +1439,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function setPassword(password as String) as String
+function setPassword(password as String)
     sec = CreateObject("roRegistrySection", "Settings")
     sec.Write("password", password)
     sec.Flush()
