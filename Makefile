@@ -25,7 +25,7 @@ APPNAME = subsonic
 PKGREL = ../packages
 ZIPREL = ../zips
 SOURCEREL = ..
-ZIP_EXCLUDE = \*.swp \*~ \*\.~ Makefile README.rst \*.git/\* \*.odp
+ZIP_EXCLUDE = \*.swp \*~ \*\.~ Makefile README.rst \*.git/\* \*.odp \*.zip
 ROKU_DEV_TARGET = roku
 BUILDDATE = `date +%y%m%d`
 .PHONY: all $(APPNAME)
