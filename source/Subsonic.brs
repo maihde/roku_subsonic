@@ -47,13 +47,14 @@ Sub Main()
     DisplayUpgradeNoticeIfNecessary()
 
     ' Verify the server connection
-    TestServerConnection()
-
-    facade.ShowMessage("Loading...")
+    m.server_connected = TestServerConnection()
+       
     ' Load the main screen data
-    LoadMainScreenData()
-
-    facade.ShowMessage("")
+    if m.server_connected then
+        facade.ShowMessage("Loading...")
+        LoadMainScreenData()
+        facade.ShowMessage("")
+    end if
     
     REM un-comment for screensaver dev testing. Screensaver will run immediately and endlessly with test image, and app will not run
     'SaveCoverArtForScreenSaver("file://pkg:/images/subsonic.png", "file://pkg:/images/subsonic.png")
@@ -61,31 +62,34 @@ Sub Main()
     
     ' Show the main screen
     while true
-       item = ShowMainScreen()
-       if item = invalid then
-           exit while
-       else if item.Type = "album" then
-           PlayAlbum(item)
-       else if item.Type = "button" then
-           if item.id = "settings" then
-               ShowConfigurationScreen()
-                ' Load the main screen data
-                LoadMainScreenData()
-           else if item.id = "shuffle" then
-               PlayRandom()
-           else if item.id = "index" then
-               ShowIndex()
-           else if item.id = "playlist" then
-               ShowPlaylists()
-           else if item.id = "search" then
-               selected_item = DoSearch()
-               if selected_item <> invalid then
-                   if selected_item.Type = "artist" then
-                       ShowArtist(selected_item)
-                   else if selected_item.Type = "album" then
-                       PlayAlbum(selected_item)
-                   else if selected_item.Type = "song" then
-                       PlaySong(selected_item)
+       if not m.server_connected then
+            ShowConfigurationScreen()
+       else
+           item = ShowMainScreen()
+           if item = invalid then
+               exit while
+           else if item.Type = "album" then
+               PlayAlbum(item)
+           else if item.Type = "button" then
+               if item.id = "settings" then
+                   ShowConfigurationScreen()
+                   m.server_connected = TestServerConnection()
+               else if item.id = "shuffle" then
+                   PlayRandom()
+               else if item.id = "index" then
+                   ShowIndex()
+               else if item.id = "playlist" then
+                   ShowPlaylists()
+               else if item.id = "search" then
+                   selected_item = DoSearch()
+                   if selected_item <> invalid then
+                       if selected_item.Type = "artist" then
+                           ShowArtist(selected_item)
+                       else if selected_item.Type = "album" then
+                           PlayAlbum(selected_item)
+                       else if selected_item.Type = "song" then
+                           PlaySong(selected_item)
+                       end if
                    end if
                end if
            end if
@@ -368,12 +372,19 @@ function ShowMainScreen() as Object
     screen.SetDisplayMode("scale-to-fill")
     screen.SetGridStyle("flat-square")
 
+    updaterMap = {} ' a map of roURLTransfer identities to categoryList indexes
     categoryList = m.Cache.categoryList
     screen.SetupLists(categoryList.count())
     names = []
     for i=0 to (categoryList.count() - 1) step 1
         names.push(categoryList[i].Name)
         screen.SetContentList(i, categoryList[i].Items)
+        
+        ' Update the list in the background
+        if i <> 0 then
+            xfer = getAlbumList(categoryList[i].Id, port)
+            updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+        end if
     next
     screen.SetListNames(names)
    
@@ -401,12 +412,23 @@ function ShowMainScreen() as Object
                 print "Main screen closed"
                 Exit while
             end if
+        else if type(msg) = "roUrlEvent" then
+            print "Processing UrlEvent ";  msg.getInt(); " "; msg.getResponseCode()
+            if msg.getInt() = 1 and msg.getResponseCode() = 200 then
+                srcId = msg.getSourceIdentity()
+                i = updaterMap.lookup(stri(srcId))
+                print "Updating row "; i
+                if i <> invalid then
+                    categoryList[i].Items = parseAlbumList(msg.getString()) 
+                    screen.SetContentList(i, categoryList[i].Items)
+                end if
+            end if
         else
-            ' Reload the random list, only if random isn't focused
+            ' Reload the random list, only if random isn't currently focused
             for i=0 to (categoryList.count() - 1) step 1
                 if categoryList[i].Id = "random" and focusedRow <> i then
-                    categoryList[i].Items = getAlbumList(categoryList[i].Id)
-                    screen.SetContentList(i, categoryList[i].Items)
+                    xfer = getAlbumList(categoryList[i].Id, port)
+                    updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
                 end if
             next        
         end if
@@ -737,15 +759,30 @@ end function
 REM ***************************************************************
 REM Called to populate the initial roGridScreen.
 REM ***************************************************************
-function getAlbumList(listtype as String) as object
+function getAlbumList(listtype as String, respPort=invalid as Dynamic) as Dynamic
     albumList = []
 
     xfer = CreateObject("roURLTransfer")
     xfer.SetURL(createSubsonicUrl("getAlbumList.view", {type: listtype}))
-    xferResult = xfer.GetToString()
+   
+    if respPort = invalid then
+        xferResult = xfer.GetToString()
+        return parseAlbumList(xferResult)
+    else
+        xfer.SetPort(respPort)
+        valid = xfer.AsyncGetToString()
+        return xfer ' If you don't return this...something strange happens with the garbage collection which throws off the response message
+    end if
+end function
+
+REM ***************************************************************
+REM Parse an album list from the XML
+REM ***************************************************************
+function parseAlbumList(xmlStr as String) as object
+    albumList = []
+
     xml = CreateObject("roXMLElement")
-    
-    if xml.Parse(xferResult)
+    if xml.Parse(xmlStr)
        for each album in xml.albumList.album
            item = CreateAlbumItemFromXml(album, 96, 132)
            if item <> invalid then
@@ -1175,6 +1212,7 @@ function DoSearch() as Dynamic
             results_screen.SetContentList(1, results.albums)
             results_screen.SetContentList(2, results.songs)
             results_screen.SetListNames(["Artists", "Albums", "Songs"])
+            results_screen.SetUpBehaviorAtTopRow("exit")
 
             results_screen.Show()
 
@@ -1280,6 +1318,7 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
     m.baseurl = invalid
     
     url = createSubsonicUrl("ping.view")
+    print "Pinging Subsonic at "; url
     xferResult = UrlTransferWithBusyDialog(url, "Connecting")
     if xferResult.code = 200 then
         print xferResult.data
@@ -1305,6 +1344,9 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
                end if
             end if 
         end if
+    else
+        print "Invalid HTTP response code: "; xferResult.code
+        print xferResult.data
     end if
 
     if alive = true and quiet_success = false then
@@ -1317,7 +1359,7 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
         ShowErrorDialog(msg)
     end if
 
-    return false
+    return alive
 end function
 
 REM ***************************************************************
