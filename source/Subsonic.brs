@@ -818,13 +818,13 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function PlayPlaylist(playlist as Object)
+function PlayPlaylist(playlist as Object, shuffle=false as Boolean)
     screen = CreateObject("roOneLineDialog")
     screen.SetTitle("Retrieving...")
     screen.ShowBusyAnimation()
     screen.Show()
     
-    songs = GetPlaylistSongs(playlist)    
+    songs = GetPlaylistSongs(playlist, shuffle)    
     ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
 end function
 
@@ -869,9 +869,14 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function GetPlaylistSongs(playlist as Object)
+function GetPlaylistSongs(playlist as Object, shuffle as Boolean)
     xfer = CreateObject("roURLTransfer")
-    xfer.SetURL(createSubsonicUrl("getPlaylist.view", {id: playlist.Id}))
+    if shuffle then
+        shuffleStr = "true"
+    else
+        shuffleStr = "false"
+    end if
+    xfer.SetURL(createSubsonicUrl("getPlaylist.view", {id: playlist.Id, shuffle: shuffleStr}))
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
    
@@ -1067,22 +1072,8 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function ShowPlaylists()
-    playlists = CreateObject("roArray", 0, true)
+    playlists = GetPlaylists()
 
-    xfer = CreateObject("roURLTransfer")
-    xfer.SetURL(createSubsonicUrl("getPlaylists.view", {}))
-    xferResult = xfer.GetToString()
-    xml = CreateObject("roXMLElement")
-
-    if xml.Parse(xferResult)
-       for each playlist in xml.playlists.playlist
-           item = CreatePlaylistItemFromXml(playlist, 158, 237)
-           if item <> invalid then
-               playlists.push(item)
-           end if
-       next
-    end if
-    
     port = CreateObject("roMessagePort")
     screen = CreateObject("roPosterScreen")
     screen.SetMessagePort(port)
@@ -1097,19 +1088,87 @@ function ShowPlaylists()
     
     screen.Show()
 
+    curIndex = 0
     while true
         msg = wait(0, port)
         print "posterscreen get selection typemsg = "; type(msg)
 
         if type(msg) = "roPosterScreenEvent" then
-            if msg.isListItemSelected() then
+            if msg.isListItemFocused() then
+                print "item focused "; msg.GetIndex()
+                curIndex = msg.GetIndex()
+            else if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                PlayPlaylist(playlists[msg.GetIndex()])
+                ShowPlaylist(playlists[msg.GetIndex()])
+            else if msg.isRemoteKeyPressed() then
+                print "remote key: " + Stri(msg.GetIndex())
+                if msg.getIndex() = 13 then' play btn pressed
+                    PlayPlaylist(playlists[curIndex])
+                end if
             else if msg.isScreenClosed() then 
                 exit while
             end if
         endif
     end while           
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function ShowPlaylist(playlist as Object)
+    albumList = CreateObject("roArray", 0, true)
+
+    port = CreateObject("roMessagePort")
+    screen = CreateObject("roSpringboardScreen")
+    screen.SetMessagePort(port)
+    screen.SetDescriptionStyle("generic")
+    screen.AddButton(1, "Play All")
+    screen.AddButton(2, "Play All (shuffle)") ' Versions 4.6 and earlier require the shuffle to run on the roku
+    screen.SetTitle(playlist.Title)
+    screen.SetPosterStyle("rounded-square-generic")
+    screen.SetContent(playlist)
+    
+    screen.Show()
+
+    while true
+        msg = wait(0, port)
+        
+        if type(msg) = "roSpringboardScreenEvent" then
+            if msg.isScreenClosed() then
+                Exit while
+            else if msg.isButtonPressed() then
+                print "list selected: " + Stri(msg.GetIndex())
+                if msg.GetIndex() = 1 then
+                    PlayPlaylist(playlist, false)
+                else if msg.GetIndex() = 2 then
+                    PlayPlaylist(playlist, true)
+                end if
+            else if msg.isScreenClosed() then 
+                exit while
+            end if
+        endif
+    end while           
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function GetPlaylists()
+    playlists = CreateObject("roArray", 0, true)
+    xfer = CreateObject("roURLTransfer")
+    xfer.SetURL(createSubsonicUrl("getPlaylists.view", {}))
+    xferResult = xfer.GetToString()
+    xml = CreateObject("roXMLElement")
+
+    if xml.Parse(xferResult)
+       for each playlist in xml.playlists.playlist
+           item = CreatePlaylistItemFromXml(playlist, 158, 237)
+           if item <> invalid then
+               playlists.push(item)
+           end if
+       next
+    end if
+    return playlists
 end function
 
 REM ***************************************************************
