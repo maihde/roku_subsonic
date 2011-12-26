@@ -853,7 +853,7 @@ function GetRandomSongs(count=20 as Integer) as Object
     xfer = CreateObject("roURLTransfer")
     xfer.SetURL(createSubsonicUrl("getRandomSongs.view", {size: Stri(count).Trim()}))
     xferResult = xfer.GetToString()
-    print xferResult
+    
     xml = CreateObject("roXMLElement")
     items = [] 
     if xml.Parse(xferResult)
@@ -874,7 +874,6 @@ REM ***************************************************************
 function ShowIndex()
     Names = CreateObject("roArray", 0, true)
     Indexes = CreateObject("roAssociativeArray")
-
     xferResult = UrlTransferWithBusyDialog(createSubsonicUrl("getIndexes.view", {}))
     xml = CreateObject("roXMLElement")
 
@@ -1177,6 +1176,11 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
     alive = false
     error = invalid
 
+    ' Invalidate cached server entires
+    m.username = invalid
+    m.password = invalid
+    m.baseurl = invalid
+    
     url = createSubsonicUrl("ping.view")
     xferResult = UrlTransferWithBusyDialog(url, "Connecting")
     if xferResult.code = 200 then
@@ -1268,6 +1272,10 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function getBaseUrl() as Dynamic
+    baseUrl = m.lookup("baseurl")
+    if baseUrl <> invalid then
+        return baseUrl
+    end if
     serverUrl = getServerUrl()
     if serverUrl <> invalid then
         pathIndex = 0
@@ -1289,7 +1297,8 @@ function getBaseUrl() as Dynamic
                 serverUrl = mid(serverUrl, 1, pathIndex - 1) + ":4040" + mid(serverUrl, pathIndex)
             end if
         end if
-        return serverUrl + "/rest"
+        m.baseUrl = serverUrl + "/rest"
+        return m.baseUrl
     else
         return invalid
     end if
@@ -1406,10 +1415,15 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function getUsername() as Dynamic 
+function getUsername() as Dynamic
+    username = m.lookup("username")
+    if username <> invalid then
+        return username
+    end if
     sec = CreateObject("roRegistrySection", "Settings")
     if sec.Exists("username") then
-        return sec.Read("username")
+        m.username = sec.Read("username") ' cache the read result because reads are very slow
+        return m.username
     else
         return invalid
     end if
@@ -1427,10 +1441,15 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function getPassword() as Dynamic 
+function getPassword() as Dynamic
+    password = m.lookup("password")
+    if password <> invalid then
+        return password
+    end if
     sec = CreateObject("roRegistrySection", "Settings")
     if sec.Exists("password") then
-        return sec.Read("password")
+        m.password = sec.Read("password") ' cache the read result because reads are very slow
+        return m.password
     else
         return invalid
     end if
