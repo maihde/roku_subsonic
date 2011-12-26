@@ -818,13 +818,16 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function PlayPlaylist(playlist as Object, shuffle=false as Boolean)
+function PlayPlaylist(playlist as Object, doshuffle=false as Boolean)
     screen = CreateObject("roOneLineDialog")
     screen.SetTitle("Retrieving...")
     screen.ShowBusyAnimation()
     screen.Show()
     
-    songs = GetPlaylistSongs(playlist, shuffle)    
+    songs = GetPlaylistSongs(playlist)
+    if doshuffle then
+        shuffle(songs)
+    end if
     ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
 end function
 
@@ -869,18 +872,13 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function GetPlaylistSongs(playlist as Object, shuffle as Boolean)
+function GetPlaylistSongs(playlist as Object)
     xfer = CreateObject("roURLTransfer")
-    if shuffle then
-        shuffleStr = "true"
-    else
-        shuffleStr = "false"
-    end if
-    xfer.SetURL(createSubsonicUrl("getPlaylist.view", {id: playlist.Id, shuffle: shuffleStr}))
+    xfer.SetURL(createSubsonicUrl("getPlaylist.view", {id: playlist.Id}))
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
-   
-    items = [] 
+
+    items = []
     if xml.Parse(xferResult)
         for each entry in xml.playlist.entry
             item = CreateSongItemFromXml(entry, 158, 237)
@@ -1859,4 +1857,16 @@ function setScreenSaverCoverArtUrl(item as dynamic)
         SaveCoverArtForScreenSaver("", "")
         'use default image if current item has no cover art
     end if
+end function
+
+REM ***************************************************************
+REM Shuffle using Durstenfeld method
+REM ***************************************************************
+function shuffle(list as Object)
+   for i=(list.Count()-1) to 1 step -1
+      j = Rnd(i+1) - 1 ' random 0 <= j <= i
+      tmp = list[i]
+      list[i] = list[j]
+      list[j] = tmp
+   end for
 end function
