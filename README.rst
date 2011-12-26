@@ -16,6 +16,11 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 Release Notes
 ~~~~~~~~~~~~~
 
+1.4.0 -
+'''''''
+ * Add support for playback of playlists
+ * Show album ratings on main screen
+ 
 1.3.0 - 19th Nov 2011
 '''''''''''''''''''''
  * Request properly scaled images from the Subsonic server to avoid slow response when
