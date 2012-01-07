@@ -16,10 +16,15 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 Release Notes
 ~~~~~~~~~~~~~
 
-1.4.0 -
+1.4.0 - 7th Jan 2011
 '''''''
- * Add support for playback of playlists
+ * Add support for playback of playlists (both as-is and shuffled)
+   - You can press the play button to bypass the springboard
  * Show album ratings on main screen
+ * Pressing up on search results returns back to main screen
+ * Improve speed by building URLs with cached values instead of reading the registry
+ * Deal with loss of server connection while program is running
+ * Reload main screen (in background) so that lists stay up to date
  
 1.3.0 - 19th Nov 2011
 '''''''''''''''''''''
