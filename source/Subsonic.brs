@@ -362,7 +362,11 @@ function LoadMainScreenData()
         for i=0 to (categoryList.count() - 1) step 1
             ' Fetch items if necessary
             if categoryList[i].Items = invalid then
-              categoryList[i].Items = getAlbumList(categoryList[i].Id)
+              if categoryList[i].Id <> "playing" then
+                categoryList[i].Items = getAlbumList(categoryList[i].Id)
+              else
+                categoryList[i].Items = getNowPlaying()
+              end if
             endif
         next
     
