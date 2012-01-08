@@ -17,7 +17,7 @@ Release Notes
 ~~~~~~~~~~~~~
 
 1.4.0 - 7th Jan 2011
-'''''''
+''''''''''''''''''''
  * Add support for playback of playlists (both as-is and shuffled)
    - You can press the play button to bypass the springboard
  * Show album ratings on main screen
@@ -72,7 +72,7 @@ Icons from Emre Ozcelik's "Elegant Blue Web" icon set
 Known Issues
 ------------
 1. With Subsonic 4.5 and earlier, transcoded files play only a portion of the file.
-   Subsonic 4.6.beta1 has fixes that resolve this issue. See this link for a patch 
+   Subsonic 4.6 resolves this issue. See this link for a patch 
    of 4.4 and 4.5:
 
    http://www.activeobjects.no/subsonic/forum/viewtopic.php?p=26893#26893
@@ -92,21 +92,4 @@ Known Issues
 
 TODO
 ----
-
-Version 1.4
-~~~~~~~~~~~
-#. When in suffle mode, fetch more when there is only one song left such that the Next->Button always has a valid entry
-#. Add support to browse and play Subsonic playlists
-#. Add ability to create playlist on the fly, similar to Subsonic webpage player, where albums/songs can be added to the playlist
-#. Reload the main-screen categories when re-entering it, but do so in the background so that the user-interface is snappy
-
-Misc
-~~~~
-#. Add basic video support
-#. Provide warning the first time a transcoded file is loading, telling the user about issue #1
-#. Error checking when server is down
-#. Add comments for functions
-#. Access lyrics from springboard page
-#. Work with subsonic developers to resolve the transcoding bug
-#. If and when roGridScreen and roAudioPlayer are compatible support continuous playback of audio
-#. Add support to view the "getNowPlaying.view" information on the main screen
+See https://github.com/maihde/roku_subsonic/issues
