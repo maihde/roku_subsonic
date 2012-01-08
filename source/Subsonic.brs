@@ -73,6 +73,8 @@ Sub Main()
                exit while
            else if item.Type = "album" then
                PlayAlbum(item)
+           else if item.Type = "song" then
+               PlaySong(item)
            else if item.Type = "button" then
                if item.id = "settings" then
                    ShowConfigurationScreen()
@@ -348,24 +350,22 @@ REM ******************************************************
 REM
 REM ******************************************************
 function LoadMainScreenData()
-    ' Only fully load the main screen if the cache doesn't currently exist
-    if m.lookup("Cache") = invalid then
-        categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
-                         {Id: "random",   Name: "Random", Items: invalid},
-                         {Id: "newest",   Name: "Recently added", Items: invalid}, 
-                         {Id: "highest",  Name: "Top rated", Items: invalid}, 
-                         {Id: "recent",   Name: "Recently played", Items: invalid}, 
-                         {Id: "frequent", Name: "Most played", Items: invalid} ]
-    
-        for i=0 to (categoryList.count() - 1) step 1
-            ' Fetch items if necessary
-            if categoryList[i].Items = invalid then
-              categoryList[i].Items = getAlbumList(categoryList[i].Id)
-            endif
-        next
-    
-        m.Cache = {categoryList: categoryList}
-    end if
+    categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
+                     {Id: "random",   Name: "Random", Items: invalid},
+                     {Id: "newest",   Name: "Recently added", Items: invalid}, 
+                     {Id: "highest",  Name: "Top rated", Items: invalid}, 
+                     {Id: "recent",   Name: "Recently played", Items: invalid}, 
+                     {Id: "frequent", Name: "Most played", Items: invalid},
+                     {Id: "playing",  Name: "Now playing", Items: invalid} ]
+
+    for i=0 to (categoryList.count() - 1) step 1
+        ' Fetch items if necessary
+        if categoryList[i].Items = invalid then
+          categoryList[i].Items = getAlbumList(categoryList[i].Id)
+        endif
+    next
+
+    m.Cache = {categoryList: categoryList}
 end function
 
 REM ******************************************************
@@ -377,7 +377,8 @@ function ShowMainScreen() as Object
     screen.SetMessagePort(port)
     screen.SetDisplayMode("scale-to-fill")
     screen.SetGridStyle("flat-square")
-
+    screen.SetDescriptionVisible(true)
+    
     updaterMap = {} ' a map of roURLTransfer identities to categoryList indexes
     categoryList = m.Cache.categoryList
     screen.SetupLists(categoryList.count())
@@ -388,8 +389,13 @@ function ShowMainScreen() as Object
         
         ' Update the list in the background
         if i <> 0 then
-            xfer = getAlbumList(categoryList[i].Id, port)
-            updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+            if categoryList[i].Id <> "playing" then
+              xfer = getAlbumList(categoryList[i].Id, port)
+              updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+            else
+              xfer = getNowPlaying(port)
+              updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+            end if
         end if
     next
     screen.SetListNames(names)
@@ -425,18 +431,28 @@ function ShowMainScreen() as Object
                 i = updaterMap.lookup(stri(srcId))
                 print "Updating row "; i
                 if i <> invalid then
-                    categoryList[i].Items = parseAlbumList(msg.getString()) 
-                    screen.SetContentList(i, categoryList[i].Items)
+                    if categoryList[i].Id <> "playing" then
+                      categoryList[i].Items = parseAlbumList(msg.getString()) 
+                      screen.SetContentList(i, categoryList[i].Items)
+                    else
+                      categoryList[i].Items = parseNowPlayingList(msg.getString()) 
+                      screen.SetContentList(i, categoryList[i].Items)
+                    end if
                 end if
             end if
         else
-            ' Reload the random list, only if random isn't currently focused
             for i=0 to (categoryList.count() - 1) step 1
+                ' Reload the random list, only if it isn't currently focused
                 if categoryList[i].Id = "random" and focusedRow <> i then
                     xfer = getAlbumList(categoryList[i].Id, port)
                     updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
                 end if
-            next        
+                 ' Reload the "Now Playing" list , only if it isn't currently focused
+                if categoryList[i].Id = "playing" and focusedRow <> i then
+                    xfer = getNowPlaying(port)
+                    updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+                end if
+            next 
         end if
     end while
     screen.Close()
@@ -798,6 +814,44 @@ function parseAlbumList(xmlStr as String) as object
     end if
 
     return albumList
+end function
+
+REM ***************************************************************
+REM Called to populate the initial roGridScreen.
+REM ***************************************************************
+function getNowPlaying(respPort=invalid as Dynamic) as Dynamic
+    albumList = []
+
+    xfer = CreateObject("roURLTransfer")
+    xfer.SetURL(createSubsonicUrl("getNowPlaying.view"))
+   
+    if respPort = invalid then
+        xferResult = xfer.GetToString()
+        return parseNowPlayingList(xferResult)
+    else
+        xfer.SetPort(respPort)
+        valid = xfer.AsyncGetToString()
+        return xfer ' If you don't return this...something strange happens with the garbage collection which throws off the response message
+    end if
+end function
+
+REM ***************************************************************
+REM Parse an album list from the XML
+REM ***************************************************************
+function parseNowPlayingList(xmlStr as String) as object
+    songList = []
+
+    xml = CreateObject("roXMLElement")
+    if xml.Parse(xmlStr)
+       for each entry in xml.nowPlaying.entry
+           item = CreateSongItemFromXml(entry, 96, 132)
+           if item <> invalid then
+               songList.push(item)
+           end if
+       next
+    end if
+
+    return songList
 end function
 
 REM ***************************************************************
@@ -1762,6 +1816,7 @@ function CreateAlbumItemFromXml(album as Object, SDPosterSize as Integer, HDPost
     item.Artist = album@artist
     item.ShortDescriptionLine1 = album@title
     item.ShortDescriptionLine2 = album@artist
+    item.Description = album@artist ' for the roGridScreen
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: album@id})
     item.StarRating = 0
     item.UserStarRating = 0
@@ -1804,6 +1859,10 @@ function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPoster
     item.ShortDescriptionLine1 = song@title
     item.ShortDescriptionLine2 = song@album + " - " + song@artist
 
+    if song@minutesAgo <> invalid then
+        item.Description = "'" + song@artist + "' (" + song@minutesAgo + " minutes ago by " + song@username + ")"
+    end if
+    
     item.ContentType = "audio"
     item.StreamFormat = invalid
 
@@ -1833,7 +1892,7 @@ function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPoster
        item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(SDPosterSize), 2)})
        item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(HDPosterSize), 2)})
     endif
-
+    
     return item
 end function
 
