@@ -357,7 +357,8 @@ function LoadMainScreenData()
                          {Id: "newest",   Name: "Recently added", Items: invalid}, 
                          {Id: "highest",  Name: "Top rated", Items: invalid}, 
                          {Id: "recent",   Name: "Recently played", Items: invalid}, 
-                         {Id: "frequent", Name: "Most played", Items: invalid} ]
+                         {Id: "frequent", Name: "Most played", Items: invalid}, 
+                         {Id: "playing",  Name: "Now playing", Items: invalid} ]
     
         for i=0 to (categoryList.count() - 1) step 1
             ' Fetch items if necessary
