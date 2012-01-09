@@ -1789,7 +1789,13 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function getClient() as String
-  return "roku"
+    client = m.lookup("client")
+    if client <> invalid then
+        return client
+    end if
+    devInfo = CreateObject("roDeviceInfo")
+    m.client = "roku-" + devInfo.GetDeviceUniqueId()
+    return m.client
 end function
 
 REM ***************************************************************
