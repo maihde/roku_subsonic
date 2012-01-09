@@ -350,22 +350,24 @@ REM ******************************************************
 REM
 REM ******************************************************
 function LoadMainScreenData()
-    categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
-                     {Id: "random",   Name: "Random", Items: invalid},
-                     {Id: "newest",   Name: "Recently added", Items: invalid}, 
-                     {Id: "highest",  Name: "Top rated", Items: invalid}, 
-                     {Id: "recent",   Name: "Recently played", Items: invalid}, 
-                     {Id: "frequent", Name: "Most played", Items: invalid},
-                     {Id: "playing",  Name: "Now playing", Items: invalid} ]
-
-    for i=0 to (categoryList.count() - 1) step 1
-        ' Fetch items if necessary
-        if categoryList[i].Items = invalid then
-          categoryList[i].Items = getAlbumList(categoryList[i].Id)
-        endif
-    next
-
-    m.Cache = {categoryList: categoryList}
+    ' Only fully load the main screen if the cache doesn't currently exist
+    if m.lookup("Cache") = invalid then
+        categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
+                         {Id: "random",   Name: "Random", Items: invalid},
+                         {Id: "newest",   Name: "Recently added", Items: invalid}, 
+                         {Id: "highest",  Name: "Top rated", Items: invalid}, 
+                         {Id: "recent",   Name: "Recently played", Items: invalid}, 
+                         {Id: "frequent", Name: "Most played", Items: invalid} ]
+    
+        for i=0 to (categoryList.count() - 1) step 1
+            ' Fetch items if necessary
+            if categoryList[i].Items = invalid then
+              categoryList[i].Items = getAlbumList(categoryList[i].Id)
+            endif
+        next
+    
+        m.Cache = {categoryList: categoryList}
+    end if
 end function
 
 REM ******************************************************
