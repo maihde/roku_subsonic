@@ -62,9 +62,12 @@ Sub Main()
     
     ' Show the main screen
     while true
+       print "Server Connected "; m.server_connected
        if not m.server_connected then
             ShowConfigurationScreen()
+            m.server_connected = TestServerConnection()
        else
+           LoadMainScreenData()
            item = ShowMainScreen()
            if item = invalid then
                exit while
@@ -345,21 +348,24 @@ REM ******************************************************
 REM
 REM ******************************************************
 function LoadMainScreenData()
-    categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
-                     {Id: "random",   Name: "Random", Items: invalid},
-                     {Id: "newest",   Name: "Recently added", Items: invalid}, 
-                     {Id: "highest",  Name: "Top rated", Items: invalid}, 
-                     {Id: "recent",   Name: "Recently played", Items: invalid}, 
-                     {Id: "frequent", Name: "Most played", Items: invalid} ]
-
-    for i=0 to (categoryList.count() - 1) step 1
-        ' Fetch items if necessary
-        if categoryList[i].Items = invalid then
-          categoryList[i].Items = getAlbumList(categoryList[i].Id)
-        endif
-    next
-
-    m.Cache = {categoryList: categoryList}
+    ' Only fully load the main screen if the cache doesn't currently exist
+    if m.lookup("Cache") = invalid then
+        categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
+                         {Id: "random",   Name: "Random", Items: invalid},
+                         {Id: "newest",   Name: "Recently added", Items: invalid}, 
+                         {Id: "highest",  Name: "Top rated", Items: invalid}, 
+                         {Id: "recent",   Name: "Recently played", Items: invalid}, 
+                         {Id: "frequent", Name: "Most played", Items: invalid} ]
+    
+        for i=0 to (categoryList.count() - 1) step 1
+            ' Fetch items if necessary
+            if categoryList[i].Items = invalid then
+              categoryList[i].Items = getAlbumList(categoryList[i].Id)
+            endif
+        next
+    
+        m.Cache = {categoryList: categoryList}
+    end if
 end function
 
 REM ******************************************************
@@ -1378,7 +1384,7 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
     print "Pinging Subsonic at "; url
     xferResult = UrlTransferWithBusyDialog(url, "Connecting")
     if xferResult.code = 200 then
-        print xferResult.data
+        ' print xferResult.data
         xml = CreateObject("roXMLElement")
         ' Run the gauntlet...only succeed if all tests pass
         if xml.Parse(xferResult.data)
