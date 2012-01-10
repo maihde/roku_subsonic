@@ -67,11 +67,13 @@ install: $(APPNAME)
 	@echo "Installing $(APPNAME) to host $(ROKU_DEV_TARGET)"
 	@curl -s -S -F "mysubmit=Install" -F "archive=@$(ZIPREL)/$(APPNAME).zip" -F "passwd=" http://$(ROKU_DEV_TARGET)/plugin_install | grep "<font color" | sed "s/<font color=\"red\">//"
 
-pkg: install
-	@echo "*** Creating Package ***"
-
+update_manifest:
 	@echo "  >> updating build_version"
 	sed -i s/^build_version=.*/build_version=$(BUILDDATE)/ manifest
+
+pkg: update_manifest install
+	@echo "*** Creating Package ***"
+
 
 	@echo "  >> creating destination directory $(PKGREL)"	
 	@if [ ! -d $(PKGREL) ]; \
