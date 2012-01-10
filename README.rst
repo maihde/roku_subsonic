@@ -16,6 +16,14 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 Release Notes
 ~~~~~~~~~~~~~
 
+1.5.0 - 9th Jan 2011
+''''''''''''''''''''
+ * Fix bug that prevent leaving the Configuration Screen when an invalid server parameters are entered
+ * Fix memory leak that could occur if the main screen is left running continuously
+ * Fix bug that prevented the main screen background updaters from working correctly in all instances
+ * Add support to show the "Now Playing" list
+ * Show artist in description area of main screen
+
 1.4.0 - 7th Jan 2011
 ''''''''''''''''''''
  * Add support for playback of playlists (both as-is and shuffled)
