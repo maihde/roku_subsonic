@@ -49,13 +49,6 @@ Sub Main()
     ' Verify the server connection
     m.server_connected = TestServerConnection()
        
-    ' Load the main screen data
-    if m.server_connected then
-        facade.ShowMessage("Loading...")
-        LoadMainScreenData()
-        facade.ShowMessage("")
-    end if
-    
     REM un-comment for screensaver dev testing. Screensaver will run immediately and endlessly with test image, and app will not run
     'SaveCoverArtForScreenSaver("file://pkg:/images/subsonic.png", "file://pkg:/images/subsonic.png")
     'RunScreenSaver()
@@ -67,7 +60,6 @@ Sub Main()
             ShowConfigurationScreen()
             m.server_connected = TestServerConnection()
        else
-           LoadMainScreenData()
            item = ShowMainScreen()
            if item = invalid then
                exit while
@@ -352,6 +344,11 @@ REM ******************************************************
 function LoadMainScreenData()
     ' Only fully load the main screen if the cache doesn't currently exist
     if m.lookup("Cache") = invalid then
+        screen = CreateObject("roOneLineDialog")
+        screen.SetTitle("Retrieving...")
+        screen.ShowBusyAnimation()
+        screen.Show()
+        
         categoryList = [ {Id: "subsonic", Name: "Subsonic", Items: getMainMenu()},
                          {Id: "random",   Name: "Random", Items: invalid},
                          {Id: "newest",   Name: "Recently added", Items: invalid}, 
@@ -373,6 +370,8 @@ function LoadMainScreenData()
     
         m.Cache = {categoryList: categoryList}
     end if
+    
+    return m.Cache.categoryList
 end function
 
 REM ******************************************************
@@ -387,7 +386,7 @@ function ShowMainScreen() as Object
     screen.SetDescriptionVisible(true)
     
     updaterMap = {} ' a map of roURLTransfer identities to categoryList indexes
-    categoryList = m.Cache.categoryList
+    categoryList = LoadMainScreenData()
     screen.SetupLists(categoryList.count())
     names = []
     for i=0 to (categoryList.count() - 1) step 1
