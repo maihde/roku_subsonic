@@ -398,10 +398,10 @@ function ShowMainScreen() as Object
         if i <> 0 then
             if categoryList[i].Id <> "playing" then
               xfer = getAlbumList(categoryList[i].Id, port)
-              updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+              updaterMap.AddReplace(stri(xfer.GetIdentity()), {xfer: xfer, row: i})
             else
               xfer = getNowPlaying(port)
-              updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+              updaterMap.AddReplace(stri(xfer.GetIdentity()), {xfer: xfer, row: i})
             end if
         end if
     next
@@ -433,17 +433,21 @@ function ShowMainScreen() as Object
             end if
         else if type(msg) = "roUrlEvent" then
             print "Processing UrlEvent ";  msg.getInt(); " "; msg.getResponseCode()
-            if msg.getInt() = 1 and msg.getResponseCode() = 200 then
-                srcId = msg.getSourceIdentity()
-                i = updaterMap.lookup(stri(srcId))
+            srcId = msg.getSourceIdentity()
+            updater = updaterMap.lookup(stri(srcId))
+            if updater <> invalid then
+                i = updater["row"]
                 print "Updating row "; i
-                if i <> invalid then
-                    if categoryList[i].Id <> "playing" then
-                      categoryList[i].Items = parseAlbumList(msg.getString()) 
-                      screen.SetContentList(i, categoryList[i].Items)
-                    else
-                      categoryList[i].Items = parseNowPlayingList(msg.getString()) 
-                      screen.SetContentList(i, categoryList[i].Items)
+                updaterMap.delete(stri(srcId))
+                if msg.getInt() = 1 and msg.getResponseCode() = 200 then
+                    if i <> invalid then
+                        if categoryList[i].Id <> "playing" then
+                          categoryList[i].Items = parseAlbumList(msg.getString()) 
+                          screen.SetContentList(i, categoryList[i].Items)
+                        else
+                          categoryList[i].Items = parseNowPlayingList(msg.getString()) 
+                          screen.SetContentList(i, categoryList[i].Items)
+                        end if
                     end if
                 end if
             end if
@@ -452,12 +456,12 @@ function ShowMainScreen() as Object
                 ' Reload the random list, only if it isn't currently focused
                 if categoryList[i].Id = "random" and focusedRow <> i then
                     xfer = getAlbumList(categoryList[i].Id, port)
-                    updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+                    updaterMap.AddReplace(stri(xfer.GetIdentity()), {xfer: xfer, row: i})
                 end if
                  ' Reload the "Now Playing" list , only if it isn't currently focused
                 if categoryList[i].Id = "playing" and focusedRow <> i then
                     xfer = getNowPlaying(port)
-                    updaterMap.AddReplace(stri(xfer.GetIdentity()), i)
+                    updaterMap.AddReplace(stri(xfer.GetIdentity()), {xfer: xfer, row: i})
                 end if
             next 
         end if
