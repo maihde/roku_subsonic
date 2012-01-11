@@ -8,4 +8,4 @@ mm_icon_focus_sd=pkg:/images/subsonic.png
 mm_icon_side_sd=pkg:/images/subsonic.png
 major_version=1
 minor_version=6
-build_version=120109
+build_version=120110
