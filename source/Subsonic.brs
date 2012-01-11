@@ -1482,6 +1482,7 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
                if xml.GetAttributes().Lookup("status") = "ok" then
                    alive = true
                else if xml.error <> invalid then
+                   versionErr = false
                    if xml.GetAttributes().Lookup("version") <> invalid  then
                         sVersion = xml.GetAttributes().Lookup("version")
                         cVersion = getApiVersion()
