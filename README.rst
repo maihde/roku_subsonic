@@ -16,6 +16,11 @@ Install this channel: https://owner.roku.com/add/X2NAU4
 Release Notes
 ~~~~~~~~~~~~~
 
+1.6.0 - 10th Jan 2011
+'''''''''''''''''''''
+ * Fix bug that prevents the channel from working if a wrong username/password has been entered
+ * Fix bug where the back button does not work on the track-playback screen or the "Show Queue" screen
+
 1.5.0 - 9th Jan 2011
 ''''''''''''''''''''
  * Fix bug that prevent leaving the Configuration Screen when an invalid server parameters are entered
