@@ -368,6 +368,7 @@ function LoadMainScreenData()
             endif
         next
     
+        screen.Close()
         m.Cache = {categoryList: categoryList}
     end if
     
@@ -876,45 +877,70 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function PlayAlbum(album as Object)
-    screen = CreateObject("roOneLineDialog")
-    screen.SetTitle("Retrieving...")
-    screen.ShowBusyAnimation()
-    screen.Show()
+    ' Create a facade to hide whatever screen came before because there is a noticable
+    ' period between dialog.Close() and the spring board render...
+    facade = CreateObject("roPosterScreen")
+    facade.Show()
+    facade.ShowMessage("")
     
+    dialog = CreateObject("roOneLineDialog")
+    dialog.SetTitle("Retrieving...")
+    dialog.ShowBusyAnimation()
+    dialog.Show() 
     songs = GetAlbumSongs(album)
+    dialog.Close() ' you must explictly close this screen otherwise it will block the back button
+    
     ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+    facade.Close()
 end function
 
 REM ***************************************************************
 REM
 REM ***************************************************************
 function PlayPlaylist(playlist as Object, doshuffle=false as Boolean)
-    screen = CreateObject("roOneLineDialog")
-    screen.SetTitle("Retrieving...")
-    screen.ShowBusyAnimation()
-    screen.Show()
+    ' Create a facade to hide whatever screen came before because there is a noticable
+    ' period between dialog.Close() and the spring board render...
+    facade = CreateObject("roPosterScreen")
+    facade.Show()
+    facade.ShowMessage("")
+    
+    dialog = CreateObject("roOneLineDialog")
+    dialog.SetTitle("Retrieving...")
+    dialog.ShowBusyAnimation()
+    dialog.Show()
     
     songs = GetPlaylistSongs(playlist)
     if doshuffle then
         shuffle(songs)
     end if
+    dialog.Close() ' you must explictly close this screen otherwise it will block the back button
+    
     ShowSpringBoard(songs, 0, {playQueueStyle: "flat-episodic"})
+    facade.Close()
 end function
 
 REM ***************************************************************
 REM
 REM ***************************************************************
 function PlayRandom()
-    screen = CreateObject("roOneLineDialog")
-    screen.SetTitle("Retrieving...")
-    screen.ShowBusyAnimation()
-    screen.Show()
+    ' Create a facade to hide whatever screen came before because there is a noticable
+    ' period between dialog.Close() and the spring board render...
+    facade = CreateObject("roPosterScreen")
+    facade.Show()
+    facade.ShowMessage("")
+    
+    dialog = CreateObject("roOneLineDialog")
+    dialog.SetTitle("Retrieving...")
+    dialog.ShowBusyAnimation()
+    dialog.Show()
 
     items = GetRandomSongs()
     options = {fetchMore: GetRandomSongs
               playQueueStyle: "flat-category"
              }
-    ShowSpringBoard(items, 0, options)            
+    dialog.Close() ' you must explictly close this screen otherwise it will block the back button
+    ShowSpringBoard(items, 0, options)
+    facade.Close()            
 end function
 
 REM ***************************************************************
