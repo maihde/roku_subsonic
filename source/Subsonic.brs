@@ -197,7 +197,7 @@ function ShowConfigurationScreen()
                     exit while
                 else if msg.isButtonPressed() then
                     if msg.getIndex() = 1 then
-                        value = GetInput("Server Address", getServerUrl(), "Enter the server address and port (i.e. 'server:4040')", 30)
+                        value = GetInput("Server Address", getServerUrl(), "Enter the server address and port (i.e. 'server:4040')", 35)
                         if value <> invalid then
                             setServerUrl(value)
                         end if
@@ -308,7 +308,7 @@ end function
 REM ******************************************************
 REM
 REM ******************************************************
-function GetInput(title as String, default as Dynamic, message as String, maxLength=20 as Integer) as Dynamic
+function GetInput(title as String, default as Dynamic, message as String, maxLength=25 as Integer) as Dynamic
     screen = CreateObject("roKeyboardScreen")
     port = CreateObject("roMessagePort")
     screen.SetMessagePort(port)
@@ -1985,7 +1985,8 @@ REM RoUrl Transfer Factory setup with certs
 REM ***************************************************************
 function CreateUrlTransfer() as Object
     xfer = CreateObject("roURLTransfer")
-    xfer.SetCertificatesFile("pkg:/certificates/subsonic.pem")
+    xfer.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    xfer.SetCertificatesFile("pkg:/certificates/cacert.pem")
     return xfer
 end function
 
@@ -1994,8 +1995,8 @@ REM GridScreen Factory setup with certs
 REM ***************************************************************
 function CreateGridScreen() as Object
     screen = CreateObject("roGridScreen")
-    screen.SetCertificatesFile("pkg:/certificates/subsonic.pem")
-    screen.InitClientCertificates()
+    screen.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    screen.SetCertificatesFile("pkg:/certificates/cacert.pem")
     return screen
 end function
 
@@ -2004,7 +2005,8 @@ REM PosterScreen Factory setup with certs
 REM ***************************************************************
 function CreatePosterScreen() as Object
     screen = CreateObject("roPosterScreen")
-    screen.SetCertificatesFile("pkg:/certificates/subsonic.pem")
+    screen.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    screen.SetCertificatesFile("pkg:/certificates/cacert.pem")
     return screen
 end function
 
@@ -2013,7 +2015,8 @@ REM SpringBoard Factory setup with certs
 REM ***************************************************************
 function CreateSpringboardScreen() as Object
     screen = CreateObject("roSpringboardScreen")
-    screen.SetCertificatesFile("pkg:/certificates/subsonic.pem")
+    screen.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    screen.SetCertificatesFile("pkg:/certificates/cacert.pem")
     return screen
 end function
 
@@ -2022,6 +2025,7 @@ REM AudioPlayer Factory setup with certs
 REM ***************************************************************
 function CreateAudioPlayer() as Object
     player = CreateObject("roAudioPlayer")
-    player.SetCertificatesFile("pkg:/certificates/subsonic.pem")
+    player.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    player.SetCertificatesFile("pkg:/certificates/cacert.pem")
     return player
 end function
