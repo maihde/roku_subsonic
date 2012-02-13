@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+
+import cgi, make_cert, sys, os
+import cgitb; cgitb.enable(False, "/opt/local/apache2/logs")  # for troubleshooting
+
+print "Content-type: text/html"
+print
+
+print """
+<html>
+<head>
+<title>Certificate Generation</title>
+<script type="text/javascript" src="/cgi-bin/js/validate.js" ></script>
+</head>
+
+<body>
+<div style="position:absolute;top:20%;left:33%;max-width:34%">
+    <h3 align="center">Generate a Server Certificate for Roku Subsonic</h3>
+<p align="left">Submit the form to download a zip archive with the files that you need and instructions for configuring your web server.</p>
+<form method="post" action="results" onsubmit="return validate()">
+    <table cellspacing="5" align="left" style="position:relative right:20%">
+        <tr align="left">
+            <td valign="top" align="left"><div align="right">Server Name:</div></td>
+            <td valign="top">
+                <input align="left" type="text" id="server" name="server"/>
+                * <br><i>Must be exactly as specified on the Roku Subsonic configuration screen</i>
+            </td>
+        </tr>
+        <tr align="left">
+            <td align="left"><div align="right">Validity:</div></td>
+            <td><input align="left" type="text" name="duration" value="3650"/>
+              <br><i>Number of days before the certificate expires</i>
+             </td>
+        </tr>
+        <tr align="left">
+            <td colspan="2" style="font-size:12">* Required field</td>
+        </tr>
+        <tr align="left">
+            <td>
+                <input type="submit"  name="submit" id="submit" value="Create Certificate" />
+            </td>
+        </tr>
+    </table>
+    </form>
+</div>
+</body>
+
+</html>
+"""
+
