@@ -11,10 +11,15 @@ Tested on Roku firmware version: 2.9 and 3.0
 
 Please provide feedback: https://github.com/inbox/new/maihde
 
-Install this channel: https://owner.roku.com/add/X2NAU4
+Install this channel: https://owner.roku.com/add/SUBSONIC
 
 Release Notes
 ~~~~~~~~~~~~~
+
+1.7.0 - 4th Mar 2011
+'''''''''''''''''''''
+ * No code changes from 1.6.0, republished to take advantage of new ability to publish channels
+   to non-US Roku players.
 
 1.6.0 - 10th Jan 2011
 '''''''''''''''''''''
