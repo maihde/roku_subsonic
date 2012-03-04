@@ -22,10 +22,10 @@
 #    Set in your this variable in your shell startup (e.g. .bashrc)
 ##########################################################################  
 APPNAME = subsonic
-PKGREL = ../packages
-ZIPREL = ../zips
+PKGREL = ./
+ZIPREL = ./
 SOURCEREL = ..
-ZIP_EXCLUDE = \*.swp \*~ \*\.~ Makefile README.rst \*.git/\* \*.odp \*.zip
+ZIP_EXCLUDE = \*.swp \*~ \*\.~ Makefile README.rst \*.git/\* \*.odp \*.zip \*.pkg
 ROKU_DEV_TARGET = roku
 BUILDDATE = `date +%y%m%d`
 .PHONY: all $(APPNAME)
@@ -52,14 +52,10 @@ $(APPNAME):
 	fi
 
 # zip .png files without compression
+	mkdir -p $(ZIPREL)
 	@echo "  >> creating application zip $(ZIPREL)/$(APPNAME).zip"	
-	@if [ -d $(SOURCEREL)/$(APPNAME) ]; \
-	then \
-		(zip -0 -r "$(ZIPREL)/$(APPNAME).zip" . -i \*.png -x $(ZIP_EXCLUDE)); \
-		(zip -9 -r "$(ZIPREL)/$(APPNAME).zip" . -x \*.png $(ZIP_EXCLUDE)); \
-	else \
-		echo "Source for $(APPNAME) not found at $(SOURCEREL)/$(APPNAME)"; \
-	fi
+	zip -0 -r "$(ZIPREL)/$(APPNAME).zip" . -i \*.png -x $(ZIP_EXCLUDE)
+	zip -9 -r "$(ZIPREL)/$(APPNAME).zip" . -x \*.png $(ZIP_EXCLUDE)
 
 	@echo "*** developer zip  $(APPNAME) complete ***"
 
@@ -72,6 +68,7 @@ update_manifest:
 	sed -i s/^build_version=.*/build_version=$(BUILDDATE)/ manifest
 
 pkg: update_manifest install
+	mkdir -p $(PKGREL)
 	@echo "*** Creating Package ***"
 
 
