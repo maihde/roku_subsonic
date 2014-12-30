@@ -897,6 +897,40 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
+function PlayAll(children as Object, doshuffle=false as Boolean)
+    ' Create a facade to hide whatever screen came before because there is a noticable
+    ' period between dialog.Close() and the spring board render...
+    facade = CreateObject("roPosterScreen")
+    facade.Show()
+    facade.ShowMessage("")
+    
+    dialog = CreateObject("roOneLineDialog")
+    dialog.SetTitle("Retrieving...")
+    dialog.ShowBusyAnimation()
+    
+    items = []
+    for each child in children
+        if child.Type = "album" then
+            songs = GetAlbumSongs(child)
+            items.append(songs)
+        else if child.Type = "song" then
+            items.push(child)
+        end if
+    next
+    
+    if doshuffle then
+        shuffle(items)
+    end if
+    dialog.Show() 
+    dialog.Close() ' you must explictly close this screen otherwise it will block the back button
+    
+    ShowSpringBoard(items, 0, {playQueueStyle: "flat-episodic"})
+    facade.Close()
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
 function PlayPlaylist(playlist as Object, doshuffle=false as Boolean)
     ' Create a facade to hide whatever screen came before because there is a noticable
     ' period between dialog.Close() and the spring board render...
@@ -1127,9 +1161,31 @@ function ShowArtist(artist as Object)
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
 
+    ' Create a play all item
+    item = CreateObject("roAssociativeArray")
+    item.Id = "playall"
+    item.Type = "Button"
+    item.ShortDescriptionLine1 = "Play All"
+    item.SDPosterUrl = "pkg:/images/posters/playall.png"
+    item.HDPosterUrl = "pkg:/images/posters/playall.png"
+    albumList.push(item)
+    
+    ' Create a shuffle all item
+    item = CreateObject("roAssociativeArray")
+    item.Id = "shuffleall"
+    item.Type = "Button"
+    item.ShortDescriptionLine1 = "Shuffle All"
+    item.SDPosterUrl = "pkg:/images/posters/shuffle.png"
+    item.HDPosterUrl = "pkg:/images/posters/shuffle.png"
+    albumList.push(item)
+    
     if xml.Parse(xferResult)
        for each child in xml.directory.child
-           item = CreateAlbumItemFromXml(child, 158, 237)
+           if child@isDir = "false" then
+               item = CreateSongItemFromXml(child, 158, 237)
+           else 
+               item = CreateAlbumItemFromXml(child, 158, 237)
+           end if
            if item <> invalid then
                albumList.push(item)
            end if
@@ -1154,7 +1210,16 @@ function ShowArtist(artist as Object)
         if type(msg) = "roPosterScreenEvent" then
             if msg.isListItemSelected() then
                 print "list selected: " + Stri(msg.GetIndex())
-                PlayAlbum(albumList[msg.GetIndex()])
+                item = albumList[msg.GetIndex()]
+                if item.Type = "album" then
+                    PlayAlbum(item)
+                else if item.Type = "song" then
+                    PlaySong(item)
+                else if item.Id = "playall" then
+                    PlayAll(albumList, false)
+                else if item.Id = "shuffleall" then
+                    PlayAll(albumList, true)
+                end if
             else if msg.isScreenClosed() then 
                 exit while
             end if
