@@ -1839,8 +1839,8 @@ function CreateArtistItemFromXml(artist as Object) as Dynamic
     item.Title = artist@name
     item.ShortDescriptionLine1 = artist@name 
     item.Url = createSubsonicUrl("getMusicDirectory.view", {id: artist@id})
-    item.SDPosterUrl = "pkg:/images/buttons/artist.png"
-    item.HDPosterUrl = "pkg:/images/buttons/artist.png"
+    item.SDPosterUrl = "pkg:/images/posters/artist.png"
+    item.HDPosterUrl = "pkg:/images/posters/artist.png"
     return item
 end function
 
@@ -1874,6 +1874,9 @@ function CreateAlbumItemFromXml(album as Object, SDPosterSize as Integer, HDPost
     if album@coverArt <> invalid then
         item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(SDPosterSize), 2)})
         item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: album@coverArt, size: mid(stri(HDPosterSize), 2)})
+    else
+        item.SDPosterUrl = "pkg:/images/posters/album.png"
+        item.HDPosterUrl = "pkg:/images/posters/album.png"
     endif
     return item
 end function
@@ -1934,6 +1937,9 @@ function CreateSongItemFromXml(song as Object, SDPosterSize as Integer, HDPoster
     if song@coverArt <> invalid then
        item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(SDPosterSize), 2)})
        item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: song@coverArt, size: mid(stri(HDPosterSize), 2)})
+    else
+       item.SDPosterUrl = "pkg:/images/posters/file.png"
+       item.HDPosterUrl = "pkg:/images/posters/file.png"
     endif
     
     return item
