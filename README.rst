@@ -16,6 +16,13 @@ Install this channel: https://owner.roku.com/add/SUBSONIC
 Release Notes
 ~~~~~~~~~~~~~
 
+1.8.0 - 14th Jan 2015
+'''''''''''''''''''''
+ * Change Artist image to fill poster screen
+ * Add default Album and Song images
+ * Provide support for Artist->Song file organization (as opposed to Artist->Album->Song)
+ * Add "Play All" and "Shuffle All" for Artist Screen
+   
 1.7.0 - 4th Mar 2011
 '''''''''''''''''''''
  * No code changes from 1.6.0, republished to take advantage of new ability to publish channels
@@ -103,7 +110,7 @@ Known Issues
 3. When returning from the search roGridScreen to the main roGridScreen, a small
    delay must manually be introduced, otherwise the main grid screen get's corrupted.
 
-4. Music must be organized in Artist/Album/Songs directory structure.
+4. Music must be organized in "Artist/Album/Songs" and/or "Artist/Songs" directory structure.
 
 5. On roku firmware version 3.0, button clicks will cause gaps in audio playback.
    Turn Sound-Effects to "Off" if this is bothersome.

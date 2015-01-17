@@ -1,11 +1,11 @@
 title=Subsonic
 subtitle=Subsonic Player
-screensaver_title=Subsonic
-screensaver_private=1
+major_version=1
+minor_version=8
+build_version=141232
 mm_icon_focus_hd=pkg:/images/subsonic.png
 mm_icon_side_hd=pkg:/images/subsonic.png
 mm_icon_focus_sd=pkg:/images/subsonic.png
 mm_icon_side_sd=pkg:/images/subsonic.png
-major_version=1
-minor_version=7
-build_version=120304
+screensaver_title=Subsonic
+screensaver_private=1
