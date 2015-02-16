@@ -77,6 +77,8 @@ Sub Main()
                    ShowIndex()
                else if item.id = "playlist" then
                    ShowPlaylists()
+                else if item.id = "podcast" then
+                   ShowPodcasts()
                else if item.id = "search" then
                    selected_item = DoSearch()
                    if selected_item <> invalid then
@@ -1041,6 +1043,13 @@ function getMainMenu() as object
               HDPosterUrl: "pkg:/images/buttons/playlist.jpg"
             }
             { Type: "button"
+              id: "podcast"
+              Title: "Podcasts"
+              Description: "Browse podcasts"
+              SDPosterUrl: "pkg:/images/buttons/podcast.png"
+              HDPosterUrl: "pkg:/images/buttons/podcast.png"
+            }
+            { Type: "button"
               id: "search"
               Title: "Search"
               Description: "Search subsonic"
@@ -1274,6 +1283,42 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
+function ShowPodcasts()
+    podcasts = GetPodcastChannels()
+
+    port = CreateObject("roMessagePort")
+    screen = CreateObject("roPosterScreen")
+    screen.SetMessagePort(port)
+    screen.SetListStyle("flat-category")
+    screen.SetListDisplayMode("scale-to-fit")
+    
+    if podcasts.Count() = 0 then
+        screen.ShowMessage("No podcasts are available")
+    else
+        screen.SetContentList(podcasts)
+    end if
+    
+    screen.Show()
+
+    curIndex = 0
+    while true
+        msg = wait(0, port)
+        print "posterscreen get selection typemsg = "; type(msg)
+
+        if type(msg) = "roPosterScreenEvent" then
+            if msg.isListItemSelected() then
+                print "list selected: " + Stri(msg.GetIndex())
+                ShowPodcastEpisodes(podcasts[msg.GetIndex()])
+            else if msg.isScreenClosed() then 
+                exit while
+            end if
+        endif
+    end while           
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
 function ShowPlaylist(playlist as Object)
     albumList = CreateObject("roArray", 0, true)
 
@@ -1312,6 +1357,50 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
+function ShowPodcastEpisodes(podcast as Dynamic)
+    episodes = GetPodcastEpisodes(podcast)
+
+    port = CreateObject("roMessagePort")
+    screen = CreateObject("roPosterScreen")
+    screen.SetMessagePort(port)
+    screen.SetListStyle("flat-episodic")
+    screen.SetListDisplayMode("scale-to-fit")
+    
+    if episodes.Count() = 0 then
+        screen.ShowMessage("No episodes are available")
+    else
+        screen.SetContentList(episodes)
+    end if
+    
+    screen.Show()
+
+    curIndex = 0
+    while true
+        msg = wait(0, port)
+        print "posterscreen get selection typemsg = "; type(msg)
+
+        if type(msg) = "roPosterScreenEvent" then
+            if msg.isListItemFocused() then
+                print "item focused "; msg.GetIndex()
+                curIndex = msg.GetIndex()
+            else if msg.isListItemSelected() then
+                print "list selected: " + Stri(msg.GetIndex())
+                PlaySong(episodes[msg.GetIndex()])
+            else if msg.isRemoteKeyPressed() then
+                print "remote key: " + Stri(msg.GetIndex())
+                if msg.getIndex() = 13 then' play btn pressed
+                    PlaySong(episodes[curIndex])
+                end if
+            else if msg.isScreenClosed() then 
+                exit while
+            end if
+        endif
+    end while           
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
 function GetPlaylists()
     playlists = CreateObject("roArray", 0, true)
     xfer = CreateObject("roURLTransfer")
@@ -1328,6 +1417,69 @@ function GetPlaylists()
        next
     end if
     return playlists
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function GetPodcastChannels()
+    xfer = CreateObject("roURLTransfer")
+    if getVersionErrMsg("1.9.0", m.version) = "OK" then
+        xfer.SetURL(createSubsonicUrl("getPodcasts.view", {includeEpisodes: "false"}))
+    else if getVersionErrMsg("1.6.0", m.version) = "OK" then
+        xfer.SetURL(createSubsonicUrl("getPodcasts.view", {}))
+    else
+        return []
+    endif 
+    
+    podcasts = CreateObject("roArray", 0, true)
+    xferResult = xfer.GetToString()
+    xml = CreateObject("roXMLElement")
+
+    if xml.Parse(xferResult)
+       for each podcast in xml.podcasts.channel
+           item = CreatePodcastChannelItemFromXml(podcast, 158, 237)
+           if item <> invalid then
+               podcasts.push(item)
+           end if
+       next
+    end if
+    
+    return podcasts
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function GetPodcastEpisodes(podcast as Object)
+    xfer = CreateObject("roURLTransfer")
+    if getVersionErrMsg("1.9.0", m.version) = "OK" then
+        xfer.SetURL(createSubsonicUrl("getPodcasts.view", {id: podcast.id}))
+    else if getVersionErrMsg("1.6.0", m.version) = "OK" then
+        xfer.SetURL(createSubsonicUrl("getPodcasts.view", {}))
+    else
+        ShowInformationalDialog("Podcasts require Subsonic version 1.6.0 or higher")
+        return []
+    endif 
+    
+    episodes = CreateObject("roArray", 0, true)
+    xferResult = xfer.GetToString()
+    xml = CreateObject("roXMLElement")
+
+    if xml.Parse(xferResult)
+       for each channel in xml.podcasts.channel
+           if channel@id = podcast.id
+               for each episode in channel.episode
+                   item = CreatePodcastEpisodeItemFromXml(episode, 158, 237)
+                   if item <> invalid then
+                       episodes.push(item)
+                   end if
+               next
+           end if
+       next
+    end if
+    
+    return episodes
 end function
 
 REM ***************************************************************
@@ -2029,6 +2181,83 @@ function CreatePlaylistItemFromXml(playlist as Object, SDPosterSize as Integer, 
     item.Url = createSubsonicUrl("getPlaylist.view", {id: playlist@id})
     item.SDPosterUrl = "pkg:/images/buttons/playlist.jpg"
     item.HDPosterUrl = "pkg:/images/buttons/playlist.jpg"
+    return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function CreatePodcastChannelItemFromXml(podcast as Object, SDPosterSize as Integer, HDPosterSize as Integer) as Dynamic
+    item = CreateObject("roAssociativeArray")
+    item.Id = podcast@id
+    item.Type = "podcast"
+    item.Title = podcast@title
+    item.ShortDescriptionLine1 = podcast@title
+    item.ShortDescriptionLine2 = podcast@description
+    item.Url = createSubsonicUrl("getPodcasts.view", {id: podcast@id})
+    item.SDPosterUrl = "pkg:/images/buttons/podcast.png"
+    item.HDPosterUrl = "pkg:/images/buttons/podcast.png"
+    return item
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function CreatePodcastEpisodeItemFromXml(episode as Object, SDPosterSize as Integer, HDPosterSize as Integer) as Dynamic
+    if episode@isDir = "true" then
+        return invalid
+    end if
+    
+    if episode@status <> "completed" then
+        return invalid
+    end if
+    
+    item = CreateObject("roAssociativeArray")
+    item.Id = episode@id
+    item.status = episode@status
+    item.Type = "song"
+    item.ContentType = "audio"
+    item.Title = episode@title
+    item.Artist = episode@artist
+    item.Album = episode@album
+    if episode@duration <> invalid then
+        item.Length = strtoi(episode@duration)
+    else
+        print "Missing duration "; episode@title
+        episode.Length = invalid 
+    end if
+    item.ShortDescriptionLine1 = episode@title
+    if episode@publishDate <> invalid then
+        ' only display yyyy-mm-dd hh:mm because nobody
+        ' cares about the seconds or fractional-seconds
+        item.ShortDescriptionLine2 = left(episode@publishDate, 16)
+    end if
+    item.Description = episode@description
+    item.ReleaseDate = episode@publishDate
+    
+    item.ContentType = "audio"
+    item.StreamFormat = invalid
+
+    ' According to the Component Reference, roAudioPlayer only supports
+    ' WMA or MP3
+    if episode@contentType = "audio/mpeg" then
+        item.StreamFormat = "mp3"
+    else if episode@transcodedContentType = "audio/mpeg"
+        item.StreamFormat = "mp3"
+    end if
+
+    if item.StreamFormat <> invalid then
+        item.Url = createSubsonicUrl("stream.view", {id: episode@streamId})
+    end if
+
+    if episode@coverArt <> invalid then
+       item.SDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: episode@coverArt, size: mid(stri(SDPosterSize), 2)})
+       item.HDPosterUrl = createSubsonicUrl("getCoverArt.view", {id: episode@coverArt, size: mid(stri(HDPosterSize), 2)})
+    else
+       item.SDPosterUrl = "pkg:/images/posters/podcast.png"
+       item.HDPosterUrl = "pkg:/images/posters/podcast.png"
+    endif
+    
     return item
 end function
 
