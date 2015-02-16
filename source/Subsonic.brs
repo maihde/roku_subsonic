@@ -155,7 +155,7 @@ function CreateConfigurationScreen(port as Object) as Object
 
     screen.AddParagraph("Software Information") 
     screen.AddParagraph(" Version: " + getSoftwareVersion().version)
-    screen.AddParagraph(" Minimum Required Server Version: " + getApiVersion())
+    screen.AddParagraph(" Minimum Required Server Version: " + getMinimumApiVersion())
     
 
     screensaverMode = getScreensaverMode()
@@ -1534,6 +1534,7 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
     m.username = invalid
     m.password = invalid
     m.baseurl = invalid
+    m.version = invalid
     
     url = createSubsonicUrl("ping.view")
     print "Pinging Subsonic at "; url
@@ -1546,11 +1547,12 @@ function TestServerConnection(quiet_success=true as Boolean, quiet_failure=false
             if xml.GetName() = "subsonic-response" then
                if xml.GetAttributes().Lookup("status") = "ok" then
                    alive = true
+                   m.version = xml.GetAttributes().Lookup("version")
                else if xml.error <> invalid then
                    versionErr = false
                    if xml.GetAttributes().Lookup("version") <> invalid  then
                         sVersion = xml.GetAttributes().Lookup("version")
-                        cVersion = getApiVersion()
+                        cVersion = getMinimumApiVersion()
                         error = getVersionErrMsg(cVersion, sVersion)
                         if error <> "OK" then
                             alive = false
@@ -1611,7 +1613,11 @@ function createSubsonicUrl(view as String, params={} as Object) as String
     ' Always override certian values
     params.u = getUsername()
     params.p = getPassword()
-    params.v = getApiVersion()
+    if m.version = invalid
+        params.v = getMinimumApiVersion()
+    else
+        params.v = m.version
+    end if
     params.c = getClient()
 
     ' Create a QueryString
@@ -1666,7 +1672,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function getApiVersion() as String
+function getMinimumApiVersion() as String
   return "1.4.0"
 End function
 
