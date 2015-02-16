@@ -2020,7 +2020,7 @@ function CreatePlaylistItemFromXml(playlist as Object, SDPosterSize as Integer, 
     item.Title = playlist@name
     item.ShortDescriptionLine1 = playlist@name
     item.ShortDescriptionLine2 = ""
-    item.Url = createSubsonicUrl("gePlaylist.view", {id: playlist@id})
+    item.Url = createSubsonicUrl("getPlaylist.view", {id: playlist@id})
     item.SDPosterUrl = "pkg:/images/buttons/playlist.jpg"
     item.HDPosterUrl = "pkg:/images/buttons/playlist.jpg"
     return item
