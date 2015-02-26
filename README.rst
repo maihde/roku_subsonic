@@ -16,6 +16,10 @@ Install this channel: https://owner.roku.com/add/SUBSONIC
 Release Notes
 ~~~~~~~~~~~~~
 
+1.9.0 - 26th Feb 2015
+'''''''''''''''''''''
+ * Add support for Podcasts
+
 1.8.0 - 14th Jan 2015
 '''''''''''''''''''''
  * Change Artist image to fill poster screen

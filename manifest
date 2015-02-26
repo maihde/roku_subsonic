@@ -1,8 +1,8 @@
 title=Subsonic
 subtitle=Subsonic Player
 major_version=1
-minor_version=8
-build_version=141232
+minor_version=9
+build_version=141261
 mm_icon_focus_hd=pkg:/images/subsonic.png
 mm_icon_side_hd=pkg:/images/subsonic.png
 mm_icon_focus_sd=pkg:/images/subsonic.png
