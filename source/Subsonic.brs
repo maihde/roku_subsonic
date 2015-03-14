@@ -174,6 +174,7 @@ function CreateConfigurationScreen(port as Object) as Object
     screen.AddButton(1, "Set Server Address")
     screen.AddButton(2, "Set Username")
     screen.AddButton(3, "Set Password")
+    screen.AddButton(7, "Demo Mode")
     screen.AddButton(6, "Change Screensaver Mode")
     screen.AddButton(4, "Test Connection")
     screen.AddButton(5, "Ok")
@@ -233,6 +234,11 @@ function ShowConfigurationScreen()
                             setScreensaverMode(value)
                         end if
                         exit while
+                    else if msg.getIndex() = 7 then
+                        setServerUrl("http://demo.subsonic.org:80")
+                        setUsername("guest")
+                        setPassword("guest")
+                        exit while
                     end if
                 end if
             endif
@@ -242,8 +248,10 @@ function ShowConfigurationScreen()
             newScreen = CreateConfigurationScreen(port)
             'highlight next button, except if screensaver mode button was pressed, highlight it again
             if msg.getIndex() = 6 then
-                newScreen.setDefaultMenuItem(3)
+                newScreen.setDefaultMenuItem(4)
             else if msg.getIndex() = 4 then
+                newScreen.setDefaultMenuItem(6)
+            else if msg.getIndex() = 7 then
                 newScreen.setDefaultMenuItem(5)
             else
                 newScreen.setDefaultMenuItem(msg.getIndex())
