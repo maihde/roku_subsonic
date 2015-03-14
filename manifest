@@ -9,3 +9,5 @@ mm_icon_focus_sd=pkg:/images/subsonic.png
 mm_icon_side_sd=pkg:/images/subsonic.png
 screensaver_title=Subsonic
 screensaver_private=1
+splash_screen_sd=pkg:/images/subsonic_sd_splash.png
+splash_screen_hd=pkg:/images/subsonic_hd_splash.png
