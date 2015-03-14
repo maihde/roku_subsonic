@@ -2033,7 +2033,7 @@ end function
 REM ***************************************************************
 REM
 REM ***************************************************************
-function setScreensaverMode(mode as String) as String
+function setScreensaverMode(mode as String)
     sec = CreateObject("roRegistrySection", "Settings")
     sec.Write("screensaverMode", mode)
     sec.Flush()
