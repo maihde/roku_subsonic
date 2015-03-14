@@ -38,6 +38,11 @@ Sub Main()
     facade.Show()
     facade.ShowMessage("")
 
+    ' If we aren't configured, then show an introduction
+    if isConfigured() = false then
+        ShowIntroduction()
+    end if
+
     ' Don't show the main screen until we have been configured
     while isConfigured() = false
        ShowConfigurationScreen()
@@ -184,6 +189,38 @@ end function
 REM ******************************************************
 REM
 REM ******************************************************
+function ShowIntroduction()
+    screen = CreateObject("roParagraphScreen")
+    port=CreateObject("roMessagePort")
+    screen.SetMessagePort(port)
+    
+    screen.AddHeaderText("Welcome to Subsonic!")
+    screen.AddParagraph("Subsonic is a media streamer that runs on your computer so you can enjoy your music from anywhere.")
+    screen.AddParagraph("Before using this channel you will need to have the Subsonic application running on your computer.")
+    screen.AddParagraph("See http://subsonic.org for installation instructions.")
+    
+    screen.AddButton(1, "Continue to Configuration")
+    screen.AddButton(2, "Demo Mode")
+    
+    screen.show()
+    while true
+        msg = wait(0, port)
+        if type(msg) = "roParagraphScreenEvent" then
+            if msg.isScreenClosed() then
+                exit while
+            else if msg.isButtonPressed() then
+                if msg.getIndex() = 2 then
+                    enableDemoConfiguration()
+                end if
+                exit while
+            end if
+        end if
+    end while
+end function
+
+REM ******************************************************
+REM
+REM ******************************************************
 function ShowConfigurationScreen()
     port=CreateObject("roMessagePort")
     screen = CreateConfigurationScreen(port)
@@ -235,9 +272,7 @@ function ShowConfigurationScreen()
                         end if
                         exit while
                     else if msg.getIndex() = 7 then
-                        setServerUrl("http://demo.subsonic.org:80")
-                        setUsername("guest")
-                        setPassword("guest")
+                        enableDemoConfiguration()
                         exit while
                     end if
                 end if
@@ -1926,6 +1961,15 @@ function getServerUrl() As Dynamic
     else
         return invalid
     end if
+end function
+
+REM ***************************************************************
+REM
+REM ***************************************************************
+function enableDemoConfiguration() As Void
+    setServerUrl("http://demo.subsonic.org:80")
+    setUsername("guest")
+    setPassword("guest")
 end function
 
 REM ***************************************************************
