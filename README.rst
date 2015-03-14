@@ -16,6 +16,12 @@ Install this channel: https://owner.roku.com/add/SUBSONIC
 Release Notes
 ~~~~~~~~~~~~~
 
+1.10.0 - 14th Mar 2015
+'''''''''''''''''''''
+ * Fix bug that would cause hang on first startup
+ * Added introduction screen
+ * Added demo mode
+
 1.9.0 - 26th Feb 2015
 '''''''''''''''''''''
  * Add support for Podcasts
