@@ -34,7 +34,7 @@ Sub Main()
     ' Set up the basic color scheme
     SetTheme()
 
-    facade = CreateObject("roPosterScreen")
+    facade = CreatePosterScreen()
     facade.Show()
     facade.ShowMessage("")
 
@@ -237,7 +237,7 @@ function ShowConfigurationScreen()
                     exit while
                 else if msg.isButtonPressed() then
                     if msg.getIndex() = 1 then
-                        value = GetInput("Server Address", getServerUrl(), "Enter the server address and port (i.e. 'server:4040')", 30)
+                        value = GetInput("Server Address", getServerUrl(), "Enter the server address and port (i.e. 'server:4040')", 35)
                         if value <> invalid then
                             setServerUrl(value)
                         end if
@@ -353,7 +353,7 @@ end function
 REM ******************************************************
 REM
 REM ******************************************************
-function GetInput(title as String, default as Dynamic, message as String, maxLength=20 as Integer) as Dynamic
+function GetInput(title as String, default as Dynamic, message as String, maxLength=25 as Integer) as Dynamic
     screen = CreateObject("roKeyboardScreen")
     port = CreateObject("roMessagePort")
     screen.SetMessagePort(port)
@@ -424,7 +424,7 @@ REM ******************************************************
 REM
 REM ******************************************************
 function ShowMainScreen() as Object
-    screen = CreateObject("roGridScreen")
+    screen = CreateGridScreen()
     port=CreateObject("roMessagePort")
     screen.SetMessagePort(port)
     screen.SetDisplayMode("scale-to-fill")
@@ -520,7 +520,7 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function ShowPlayQueue(items as Object, nowplaying=0 as Integer, style="flat-episodic" as String)
-    screen = CreateObject("roPosterScreen")
+    screen = CreatePosterScreen()
     screen.SetListStyle(style)
     port=CreateObject("roMessagePort")
     screen.SetMessagePort(port)
@@ -569,7 +569,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
         Init: function(port as Object, items as Object, index=0 as Integer) 
             m.index = index
             m.items = items
-            m.audioPlayer = CreateObject("roAudioPlayer")
+            m.audioPlayer = CreateAudioPlayer()
             m.audioPlayer.SetMessagePort(port)
             m.audioPlayer.SetLoop(0)
             m.audioPlayer.SetContentList(m.items)
@@ -680,7 +680,7 @@ function ShowSpringBoard(items as Object, index=0 as Integer, options={} as Obje
     player.Init(port, items, index)
 
     ' the display screen
-    screen = CreateObject("roSpringboardScreen")
+    screen = CreateSpringboardScreen()
     screen.AllowUpdates(false)
 REM    screen.SetBreadcrumbText(prevLoc,"Now Playing")
     screen.SetMessagePort(port)
@@ -840,7 +840,7 @@ REM ***************************************************************
 function getAlbumList(listtype as String, respPort=invalid as Dynamic) as Dynamic
     albumList = []
 
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(createSubsonicUrl("getAlbumList.view", {type: listtype}))
    
     if respPort = invalid then
@@ -863,6 +863,7 @@ function parseAlbumList(xmlStr as String) as object
     if xml.Parse(xmlStr)
        for each album in xml.albumList.album
            item = CreateAlbumItemFromXml(album, 96, 132)
+           print item
            if item <> invalid then
                albumList.push(item)
            end if
@@ -878,7 +879,7 @@ REM ***************************************************************
 function getNowPlaying(respPort=invalid as Dynamic) as Dynamic
     albumList = []
 
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(createSubsonicUrl("getNowPlaying.view"))
    
     if respPort = invalid then
@@ -924,7 +925,7 @@ REM ***************************************************************
 function PlayAlbum(album as Object)
     ' Create a facade to hide whatever screen came before because there is a noticable
     ' period between dialog.Close() and the spring board render...
-    facade = CreateObject("roPosterScreen")
+    facade = CreatePosterScreen()
     facade.Show()
     facade.ShowMessage("")
     
@@ -979,7 +980,7 @@ REM ***************************************************************
 function PlayPlaylist(playlist as Object, doshuffle=false as Boolean)
     ' Create a facade to hide whatever screen came before because there is a noticable
     ' period between dialog.Close() and the spring board render...
-    facade = CreateObject("roPosterScreen")
+    facade = CreatePosterScreen()
     facade.Show()
     facade.ShowMessage("")
     
@@ -1004,7 +1005,7 @@ REM ***************************************************************
 function PlayRandom()
     ' Create a facade to hide whatever screen came before because there is a noticable
     ' period between dialog.Close() and the spring board render...
-    facade = CreateObject("roPosterScreen")
+    facade = CreatePosterScreen()
     facade.Show()
     facade.ShowMessage("")
     
@@ -1026,7 +1027,7 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function GetAlbumSongs(album as Object)
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(createSubsonicUrl("getMusicDirectory.view", {id: album.Id}))
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
@@ -1048,7 +1049,7 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function GetPlaylistSongs(playlist as Object)
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(createSubsonicUrl("getPlaylist.view", {id: playlist.Id}))
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
@@ -1121,7 +1122,7 @@ REM ***************************************************************
 REM
 REM ***************************************************************
 function GetRandomSongs(count=20 as Integer) as Object
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(createSubsonicUrl("getRandomSongs.view", {size: Stri(count).Trim()}))
     xferResult = xfer.GetToString()
     
@@ -1149,7 +1150,7 @@ function ShowIndex()
     xml = CreateObject("roXMLElement")
 
     port = CreateObject("roMessagePort")
-    screen = CreateObject("roPosterScreen")
+    screen = CreatePosterScreen()
     screen.SetMessagePort(port)
     screen.SetListStyle("flat-category")
     screen.SetListDisplayMode("best-fit")
@@ -1208,7 +1209,7 @@ REM ***************************************************************
 function ShowArtist(artist as Object)
     albumList = CreateObject("roArray", 0, true)
 
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(artist.Url)
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
@@ -1245,7 +1246,7 @@ function ShowArtist(artist as Object)
     end if
     
     port = CreateObject("roMessagePort")
-    screen = CreateObject("roPosterScreen")
+    screen = CreatePosterScreen()
     screen.SetMessagePort(port)
     screen.SetListStyle("flat-category")
     screen.SetListDisplayMode("scale-to-fit")
@@ -1286,7 +1287,7 @@ function ShowPlaylists()
     playlists = GetPlaylists()
 
     port = CreateObject("roMessagePort")
-    screen = CreateObject("roPosterScreen")
+    screen = CreatePosterScreen()
     screen.SetMessagePort(port)
     screen.SetListStyle("flat-category")
     screen.SetListDisplayMode("scale-to-fit")
@@ -1366,7 +1367,7 @@ function ShowPlaylist(playlist as Object)
     albumList = CreateObject("roArray", 0, true)
 
     port = CreateObject("roMessagePort")
-    screen = CreateObject("roSpringboardScreen")
+    screen = CreateSpringboardScreen()
     screen.SetMessagePort(port)
     screen.SetDescriptionStyle("generic")
     screen.AddButton(1, "Play All")
@@ -1446,7 +1447,7 @@ REM
 REM ***************************************************************
 function GetPlaylists()
     playlists = CreateObject("roArray", 0, true)
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     xfer.SetURL(createSubsonicUrl("getPlaylists.view", {}))
     xferResult = xfer.GetToString()
     xml = CreateObject("roXMLElement")
@@ -1575,7 +1576,7 @@ function DoSearch() as Dynamic
         endif
     end while           
         
-    search_facade = CreateObject("roPosterScreen")
+    search_facade = CreatePosterScreen()
     search_facade.Show()
 
     search_screen.Close() 
@@ -1614,7 +1615,7 @@ function DoSearch() as Dynamic
 
         if results.artists.Count() > 0 or results.albums.Count() > 0 or results.songs.Count() > 0 then
 
-            results_screen = CreateObject("roGridScreen")
+            results_screen = CreateGridScreen()
             results_screen.SetBreadcrumbText("Search results for '" + searchterm + "'", "")
             results_screen.SetBreadcrumbEnabled(true)
             results_screen.SetMessagePort(port)
@@ -1692,7 +1693,7 @@ function URLTransferWithBusyDialog(url as String, title="Retrieving..." as Strin
     screen.ShowBusyAnimation()
     screen.Show()
 
-    xfer = CreateObject("roURLTransfer")
+    xfer = CreateUrlTransfer()
     port = CreateObject("roMessagePort")
     xfer.SetPort(port)
     xfer.SetURL(url)
@@ -2335,4 +2336,54 @@ function shuffle(list as Object)
       list[i] = list[j]
       list[j] = tmp
    end for
+end function
+
+REM ***************************************************************
+REM RoUrl Transfer Factory setup with certs
+REM ***************************************************************
+function CreateUrlTransfer() as Object
+    xfer = CreateObject("roURLTransfer")
+    xfer.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    xfer.SetCertificatesFile("pkg:/certificates/cacert.pem")
+    return xfer
+end function
+
+REM ***************************************************************
+REM GridScreen Factory setup with certs
+REM ***************************************************************
+function CreateGridScreen() as Object
+    screen = CreateObject("roGridScreen")
+    screen.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    screen.SetCertificatesFile("pkg:/certificates/cacert.pem")
+    return screen
+end function
+
+REM ***************************************************************
+REM PosterScreen Factory setup with certs
+REM ***************************************************************
+function CreatePosterScreen() as Object
+    screen = CreateObject("roPosterScreen")
+    screen.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    screen.SetCertificatesFile("pkg:/certificates/cacert.pem")
+    return screen
+end function
+
+REM ***************************************************************
+REM SpringBoard Factory setup with certs
+REM ***************************************************************
+function CreateSpringboardScreen() as Object
+    screen = CreateObject("roSpringboardScreen")
+    screen.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    screen.SetCertificatesFile("pkg:/certificates/cacert.pem")
+    return screen
+end function
+
+REM ***************************************************************
+REM AudioPlayer Factory setup with certs
+REM ***************************************************************
+function CreateAudioPlayer() as Object
+    player = CreateObject("roAudioPlayer")
+    player.AddHeader("Content-Type", "application/x-www-form-urlencoded")
+    player.SetCertificatesFile("pkg:/certificates/cacert.pem")
+    return player
 end function

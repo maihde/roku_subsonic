@@ -123,7 +123,13 @@ Known Issues
 4. Music must be organized in "Artist/Album/Songs" and/or "Artist/Songs" directory structure.
 
 5. On roku firmware version 3.0, button clicks will cause gaps in audio playback.
-   Turn Sound-Effects to "Off" if this is bothersome.
+   Turn Sound-Effects to "Off" if this is bothersome.  This seems to be fixed in firmware version 3.1
+   
+6. roGridScreen does not load images from https URLs
+
+7. When using https, the Roku requires a certificate name that matches the server URL exactly.  This is
+   because many Roku objects (roPosterScreen, roGridScreen, etc.) don't allow strict host checking to
+   be disabled.  Currently only roUrlTransfer allows strict host checking to be disabled.
 
 TODO
 ----

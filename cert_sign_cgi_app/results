@@ -1,0 +1,26 @@
+#!/usr/bin/env python
+
+import sys, cgi, make_cert
+
+#Swallow output during cert processing 
+old_stderr = sys.stderr
+sys.stderr = open("roku_cert_err.log", 'a')
+old_stdout = sys.stdout
+sys.stdout = open("roku_cert_out.log", 'a')
+form = cgi.FieldStorage()
+
+try:
+    server = form.getvalue("server", "").__str__()
+    validity_s = form.getvalue("validity").__str__()
+    try:
+        validity = int(validity_s)
+    except ValueError:
+        validity = 3650
+    if (server != None and server != ""):
+        print "redirected output"
+        make_cert.makeCert(server, validity)
+finally:
+    sys.stderr.close()
+    sys.stderr = old_stderr 
+    sys.stdout.close()
+    sys.stdout = old_stdout 
